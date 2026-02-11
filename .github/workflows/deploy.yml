@@ -1,0 +1,114 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    tags:
+      - '*.*.*-dev'       # dev
+      - '*.*.*-sandbox'   # sandbox
+      - '*.*.*'           # prod (default)
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Determine Environment
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          
+          if [[ "$VERSION" == *"-dev" ]]; then
+            echo "ENVIRONMENT=dev" >> "$GITHUB_ENV"
+          elif [[ "$VERSION" == *"-sandbox" ]]; then
+            echo "ENVIRONMENT=sandbox" >> "$GITHUB_ENV"
+          else
+            echo "ENVIRONMENT=prod" >> "$GITHUB_ENV"
+          fi
+
+      - name: Log Version / Environment
+        run: echo "Deploying $VERSION → ${ENVIRONMENT}"
+
+      - name: Authenticate with GCP
+        run: |
+          echo "${{ secrets.GCP_SA_KEY }}" | base64 --decode > gcp-key.json
+          gcloud auth activate-service-account --key-file=gcp-key.json
+          gcloud config set project "${{ secrets.GCP_PROJECT }}"
+
+      - name: Build & Push Backend Image
+        run: |
+          cd backend
+          IMAGE_URI="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/ofta-repo/ofta-core:${{ env.VERSION }}"
+          gcloud builds submit --tag "$IMAGE_URI"
+
+      - name: Deploy Backend to Cloud Run
+        run: |
+          SERVICE="ofta-core-${{ env.ENVIRONMENT }}"
+          IMAGE_URI="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/ofta-repo/ofta-core:${{ env.VERSION }}"
+          
+          gcloud run deploy "$SERVICE" \
+            --image="$IMAGE_URI" \
+            --region=us-central1 \
+            --platform=managed \
+            --allow-unauthenticated \
+            --set-env-vars "\
+              OFTA_DB_HOST=${{ secrets.OFTA_DB_HOST }},\
+              OFTA_DB_PORT=${{ secrets.OFTA_DB_PORT }},\
+              OFTA_DB_NAME=${{ secrets.OFTA_DB_NAME }},\
+              OFTA_DB_USERNAME=${{ secrets.OFTA_DB_USERNAME }},\
+              OFTA_DB_PASSWORD=${{ secrets.OFTA_DB_PASSWORD }},\
+              SECRET_KEY=${{ secrets.SECRET_KEY }},\
+              JWT_SECRET=${{ secrets.JWT_SECRET }},\
+              FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }},\
+              GOOGLE_CLOUD_PROJECT=${{ secrets.GCP_PROJECT }},\
+              OFTA_STORAGE_BUCKET=${{ secrets.OFTA_STORAGE_BUCKET }},\
+              ENVIRONMENT=${{ env.ENVIRONMENT }}"
+
+      - name: Clean up
+        run: rm -f gcp-key.json
+
+  deploy-admin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Determine Environment
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          
+          if [[ "$VERSION" == *"-dev" ]]; then
+            echo "ENVIRONMENT=dev" >> "$GITHUB_ENV"
+          elif [[ "$VERSION" == *"-sandbox" ]]; then
+            echo "ENVIRONMENT=sandbox" >> "$GITHUB_ENV"
+          else
+            echo "ENVIRONMENT=prod" >> "$GITHUB_ENV"
+          fi
+
+      - name: Authenticate with GCP
+        run: |
+          echo "${{ secrets.GCP_SA_KEY }}" | base64 --decode > gcp-key.json
+          gcloud auth activate-service-account --key-file=gcp-key.json
+          gcloud config set project "${{ secrets.GCP_PROJECT }}"
+
+      - name: Build & Push Admin Image
+        run: |
+          cd admin
+          IMAGE_URI="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/ofta-repo/ofta-admin:${{ env.VERSION }}"
+          gcloud builds submit --tag "$IMAGE_URI"
+
+      - name: Deploy Admin to Cloud Run
+        run: |
+          SERVICE="ofta-admin-${{ env.ENVIRONMENT }}"
+          IMAGE_URI="us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT }}/ofta-repo/ofta-admin:${{ env.VERSION }}"
+          
+          gcloud run deploy "$SERVICE" \
+            --image="$IMAGE_URI" \
+            --region=us-central1 \
+            --platform=managed \
+            --allow-unauthenticated
+
+      - name: Clean up
+        run: rm -f gcp-key.json
