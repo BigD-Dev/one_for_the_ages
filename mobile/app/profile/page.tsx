@@ -4,6 +4,10 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
+import { AppShell } from '@/components/ui/Layout'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { ArrowLeft, Settings } from 'lucide-react'
 
 interface UserStats {
     lifetime_score: number
@@ -72,10 +76,10 @@ export default function ProfilePage() {
 
     const getModeLabel = (mode: string) => {
         const labels: Record<string, string> = {
-            'AGE_GUESS': '🎯 Age Guess',
-            'WHO_OLDER': '⚖️ Who\'s Older',
-            'DAILY_CHALLENGE': '⭐ Daily',
-            'REVERSE_SIGN': '🔮 Reverse',
+            'AGE_GUESS': 'Age Guess',
+            'WHO_OLDER': "Who's Older",
+            'DAILY_CHALLENGE': 'Daily',
+            'REVERSE_SIGN': 'Reverse',
         }
         return labels[mode] || mode
     }
@@ -87,125 +91,123 @@ export default function ProfilePage() {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-dark-950">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
-            </div>
+            <AppShell className="flex items-center justify-center">
+                <div className="skeleton w-12 h-12 rounded-full" />
+            </AppShell>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-dark-950 to-dark-900 p-6">
+        <AppShell>
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <button onClick={() => router.push('/')} className="text-gray-400 hover:text-white">
-                    ← Back
+            <header className="flex items-center justify-between mb-6">
+                <Button variant="ghost" onClick={() => router.push('/')} className="text-text-muted">
+                    <ArrowLeft size={18} className="mr-1" /> Back
+                </Button>
+                <h1 className="text-xl font-bold text-text-primary font-serif">Profile</h1>
+                <button onClick={() => router.push('/settings')} className="text-text-muted active:opacity-80 transition-opacity duration-150 p-2">
+                    <Settings size={18} />
                 </button>
-                <h1 className="text-2xl font-bold text-primary-400">Profile</h1>
-                <button onClick={() => router.push('/settings')} className="text-gray-400 hover:text-white">
-                    ⚙️
-                </button>
-            </div>
+            </header>
 
             {/* User Card */}
-            <div className="bg-dark-800 rounded-2xl p-6 mb-6 text-center">
-                <div className="w-20 h-20 bg-gradient-to-r from-primary-500 to-primary-600 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <span className="text-3xl">
+            <Card className="p-6 mb-6 text-center">
+                <div className="w-20 h-20 rounded-full border-2 border-gold mx-auto mb-4 flex items-center justify-center bg-surface">
+                    <span className="text-3xl font-serif text-gold">
                         {oftaUser?.display_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'}
                     </span>
                 </div>
-                <h2 className="text-xl font-bold text-white">
+                <h2 className="text-xl font-bold text-text-primary font-serif">
                     {oftaUser?.display_name || user?.displayName || 'Anonymous Player'}
                 </h2>
-                <p className="text-gray-400 text-sm">
+                <p className="text-text-muted text-sm">
                     {user?.email || 'Guest Account'}
                 </p>
                 {stats && (
-                    <p className="text-primary-400 text-sm mt-2">
-                        🎮 {stats.games_played} games played
+                    <p className="text-primary text-sm mt-2 font-mono">
+                        {stats.games_played} games played
                     </p>
                 )}
-            </div>
+            </Card>
 
             {/* Quick Stats */}
             {stats && (
                 <div className="grid grid-cols-3 gap-3 mb-6">
-                    <div className="bg-dark-800 rounded-xl p-4 text-center">
-                        <p className="text-2xl font-bold text-primary-400">{stats.lifetime_score.toLocaleString()}</p>
-                        <p className="text-gray-400 text-xs">Total Score</p>
-                    </div>
-                    <div className="bg-dark-800 rounded-xl p-4 text-center">
-                        <p className="text-2xl font-bold text-orange-400">{stats.best_streak}</p>
-                        <p className="text-gray-400 text-xs">Best Streak</p>
-                    </div>
-                    <div className="bg-dark-800 rounded-xl p-4 text-center">
-                        <p className="text-2xl font-bold text-green-400">{stats.accuracy_pct.toFixed(0)}%</p>
-                        <p className="text-gray-400 text-xs">Accuracy</p>
-                    </div>
+                    <Card className="p-4 text-center">
+                        <p className="text-2xl font-bold text-primary font-mono">{stats.lifetime_score.toLocaleString()}</p>
+                        <p className="text-text-muted text-xs">Total Score</p>
+                    </Card>
+                    <Card className="p-4 text-center">
+                        <p className="text-2xl font-bold text-gold font-mono">{stats.best_streak}</p>
+                        <p className="text-text-muted text-xs">Best Streak</p>
+                    </Card>
+                    <Card className="p-4 text-center">
+                        <p className="text-2xl font-bold text-green-400 font-mono">{stats.accuracy_pct.toFixed(0)}%</p>
+                        <p className="text-text-muted text-xs">Accuracy</p>
+                    </Card>
                 </div>
             )}
 
             {/* Section Tabs */}
-            <div className="flex bg-dark-800 rounded-xl p-1 mb-6">
+            <div className="flex bg-surface rounded-sharp border border-border-subtle p-1 mb-6">
                 {(['stats', 'history', 'achievements'] as const).map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveSection(tab)}
-                        className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${activeSection === tab
-                                ? 'bg-primary-500 text-white'
-                                : 'text-gray-400 hover:text-white'
-                            }`}
+                        className={`flex-1 py-2 rounded-sharp text-sm font-medium transition-colors duration-150 ${
+                            activeSection === tab
+                                ? 'bg-primary text-white'
+                                : 'text-text-muted'
+                        }`}
                     >
-                        {tab === 'stats' && '📊 Stats'}
-                        {tab === 'history' && '📜 History'}
-                        {tab === 'achievements' && '🏅 Awards'}
+                        {tab === 'stats' && 'Stats'}
+                        {tab === 'history' && 'History'}
+                        {tab === 'achievements' && 'Awards'}
                     </button>
                 ))}
             </div>
 
             {/* Stats Section */}
             {activeSection === 'stats' && stats && (
-                <div className="space-y-3">
-                    <StatRow label="Total Score" value={stats.lifetime_score.toLocaleString()} icon="🏆" />
-                    <StatRow label="Games Played" value={stats.games_played.toString()} icon="🎮" />
-                    <StatRow label="Best Streak" value={`${stats.best_streak} 🔥`} icon="⚡" />
-                    <StatRow label="Total Correct" value={`${stats.total_correct} / ${stats.total_questions}`} icon="✅" />
-                    <StatRow label="Accuracy" value={`${stats.accuracy_pct.toFixed(1)}%`} icon="🎯" />
-                    <StatRow label="Daily Challenges" value={stats.daily_challenges.toString()} icon="⭐" />
+                <div className="space-y-1">
+                    <StatRow label="Total Score" value={stats.lifetime_score.toLocaleString()} />
+                    <StatRow label="Games Played" value={stats.games_played.toString()} />
+                    <StatRow label="Best Streak" value={stats.best_streak.toString()} />
+                    <StatRow label="Total Correct" value={`${stats.total_correct} / ${stats.total_questions}`} />
+                    <StatRow label="Accuracy" value={`${stats.accuracy_pct.toFixed(1)}%`} />
+                    <StatRow label="Daily Challenges" value={stats.daily_challenges.toString()} />
                     {stats.favourite_category && (
-                        <StatRow label="Favourite Category" value={stats.favourite_category} icon="❤️" />
+                        <StatRow label="Favourite Category" value={stats.favourite_category} />
                     )}
                 </div>
             )}
 
             {/* History Section */}
             {activeSection === 'history' && (
-                <div className="space-y-2">
+                <div className="space-y-1">
                     {history.length === 0 ? (
                         <div className="text-center py-8">
-                            <p className="text-gray-400">No games played yet</p>
-                            <button
-                                onClick={() => router.push('/')}
-                                className="mt-4 bg-primary-500 text-white px-6 py-2 rounded-lg"
-                            >
+                            <p className="text-text-muted">No games played yet</p>
+                            <Button onClick={() => router.push('/')} className="mt-4">
                                 Play Now
-                            </button>
+                            </Button>
                         </div>
                     ) : (
                         history.map((game) => (
-                            <div key={game.session_id} className="bg-dark-800 rounded-xl p-4">
+                            <Card key={game.session_id} className="p-4">
                                 <div className="flex justify-between items-start mb-2">
                                     <div>
-                                        <p className="text-white font-bold">{getModeLabel(game.mode)}</p>
-                                        <p className="text-gray-500 text-xs">{formatDate(game.played_at)}</p>
+                                        <p className="text-text-primary font-medium">{getModeLabel(game.mode)}</p>
+                                        <p className="text-text-muted text-xs">{formatDate(game.played_at)}</p>
                                     </div>
-                                    <p className="text-primary-400 font-bold text-lg">{game.score}</p>
+                                    <p className="text-primary font-bold font-mono">{game.score}</p>
                                 </div>
-                                <div className="flex gap-4 text-xs text-gray-400">
-                                    <span>✅ {game.correct_count}/{game.questions_count}</span>
-                                    <span>🎯 {game.accuracy.toFixed(0)}%</span>
-                                    <span>🔥 {game.best_streak}</span>
+                                <div className="flex gap-4 text-xs text-text-muted font-mono">
+                                    <span>{game.correct_count}/{game.questions_count} correct</span>
+                                    <span>{game.accuracy.toFixed(0)}% acc</span>
+                                    <span>{game.best_streak} streak</span>
                                 </div>
-                            </div>
+                            </Card>
                         ))
                     )}
                 </div>
@@ -213,47 +215,41 @@ export default function ProfilePage() {
 
             {/* Achievements Section */}
             {activeSection === 'achievements' && (
-                <div className="space-y-2">
+                <div className="space-y-1">
                     {achievements.length === 0 ? (
                         <div className="text-center py-8">
-                            <p className="text-gray-400">No achievements yet</p>
+                            <p className="text-text-muted">No achievements yet</p>
                         </div>
                     ) : (
                         achievements.map((ach) => (
-                            <div
+                            <Card
                                 key={ach.id}
-                                className={`rounded-xl p-4 flex items-center gap-4 ${ach.unlocked
-                                        ? 'bg-dark-800'
-                                        : 'bg-dark-800/50 opacity-50'
-                                    }`}
+                                className={`p-4 flex items-center gap-4 ${!ach.unlocked ? 'opacity-50' : ''}`}
                             >
-                                <div className="text-3xl">{ach.icon || '🏅'}</div>
+                                <div className="text-2xl">{ach.icon || '*'}</div>
                                 <div className="flex-1">
-                                    <p className={`font-bold ${ach.unlocked ? 'text-white' : 'text-gray-500'}`}>
+                                    <p className={`font-medium ${ach.unlocked ? 'text-text-primary' : 'text-text-muted'}`}>
                                         {ach.title}
                                     </p>
-                                    <p className="text-gray-400 text-xs">{ach.description}</p>
+                                    <p className="text-text-muted text-xs">{ach.description}</p>
                                 </div>
                                 {ach.unlocked && (
-                                    <span className="text-green-400 text-sm">✓</span>
+                                    <span className="text-green-400 text-sm font-mono">Done</span>
                                 )}
-                            </div>
+                            </Card>
                         ))
                     )}
                 </div>
             )}
-        </div>
+        </AppShell>
     )
 }
 
-function StatRow({ label, value, icon }: { label: string; value: string; icon: string }) {
+function StatRow({ label, value }: { label: string; value: string }) {
     return (
-        <div className="bg-dark-800 rounded-xl p-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-                <span className="text-xl">{icon}</span>
-                <p className="text-gray-300">{label}</p>
-            </div>
-            <p className="text-white font-bold">{value}</p>
+        <div className="flex items-center justify-between py-3 px-4 border-b border-border-subtle">
+            <p className="text-text-muted">{label}</p>
+            <p className="text-text-primary font-bold font-mono">{value}</p>
         </div>
     )
 }

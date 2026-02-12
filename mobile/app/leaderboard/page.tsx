@@ -4,6 +4,10 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
+import { AppShell } from '@/components/ui/Layout'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { ArrowLeft } from 'lucide-react'
 
 interface LeaderboardEntry {
     rank: number
@@ -52,52 +56,54 @@ export default function LeaderboardPage() {
         setIsLoading(false)
     }
 
-    const getRankEmoji = (rank: number) => {
-        if (rank === 1) return '🥇'
-        if (rank === 2) return '🥈'
-        if (rank === 3) return '🥉'
+    const getRankLabel = (rank: number) => {
+        if (rank === 1) return 'Gold'
+        if (rank === 2) return 'Silver'
+        if (rank === 3) return 'Bronze'
         return `#${rank}`
     }
 
     const getRankColor = (rank: number) => {
-        if (rank === 1) return 'text-yellow-400'
+        if (rank === 1) return 'text-gold'
         if (rank === 2) return 'text-gray-300'
         if (rank === 3) return 'text-amber-600'
-        return 'text-gray-400'
+        return 'text-text-muted'
     }
 
     const entries = activeTab === 'daily' ? dailyEntries : allTimeEntries
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-dark-950 to-dark-900 p-6">
+        <AppShell>
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <button onClick={() => router.push('/')} className="text-gray-400 hover:text-white">
-                    ← Back
-                </button>
-                <h1 className="text-2xl font-bold text-primary-400">🏆 Leaderboard</h1>
-                <div className="w-12"></div>
-            </div>
+            <header className="flex items-center justify-between mb-6">
+                <Button variant="ghost" onClick={() => router.push('/')} className="text-text-muted">
+                    <ArrowLeft size={18} className="mr-1" /> Back
+                </Button>
+                <h1 className="text-xl font-bold text-text-primary font-serif">Leaderboard</h1>
+                <div className="w-16" />
+            </header>
 
             {/* Tabs */}
-            <div className="flex bg-dark-800 rounded-xl p-1 mb-6">
+            <div className="flex bg-surface rounded-sharp border border-border-subtle p-1 mb-6">
                 <button
                     onClick={() => setActiveTab('daily')}
-                    className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'daily'
-                            ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
-                            : 'text-gray-400 hover:text-white'
-                        }`}
+                    className={`flex-1 py-2 rounded-sharp text-sm font-medium transition-colors duration-150 ${
+                        activeTab === 'daily'
+                            ? 'bg-primary text-white'
+                            : 'text-text-muted'
+                    }`}
                 >
-                    ⭐ Daily
+                    Daily
                 </button>
                 <button
                     onClick={() => setActiveTab('alltime')}
-                    className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${activeTab === 'alltime'
-                            ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white'
-                            : 'text-gray-400 hover:text-white'
-                        }`}
+                    className={`flex-1 py-2 rounded-sharp text-sm font-medium transition-colors duration-150 ${
+                        activeTab === 'alltime'
+                            ? 'bg-primary text-white'
+                            : 'text-text-muted'
+                    }`}
                 >
-                    🌟 All Time
+                    All Time
                 </button>
             </div>
 
@@ -109,75 +115,73 @@ export default function LeaderboardPage() {
                         value={selectedDate}
                         onChange={(e) => setSelectedDate(e.target.value)}
                         max={new Date().toISOString().split('T')[0]}
-                        className="w-full bg-dark-800 text-white py-3 px-4 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:outline-none"
+                        className="w-full bg-surface text-text-primary py-3 px-4 rounded-sharp border border-border-subtle focus:border-primary focus:outline-none"
                     />
                 </div>
             )}
 
             {/* My Rank Banner */}
             {myRank && (
-                <div className="bg-gradient-to-r from-primary-500/20 to-primary-600/20 border border-primary-500/30 rounded-xl p-4 mb-6">
+                <Card className="p-4 mb-6 border-primary/30">
                     <div className="flex justify-between items-center">
                         <div>
-                            <p className="text-primary-400 text-sm font-bold">Your Rank</p>
-                            <p className="text-white text-2xl font-bold">#{myRank}</p>
+                            <p className="text-primary text-sm font-bold">Your Rank</p>
+                            <p className="text-text-primary text-2xl font-bold font-mono">#{myRank}</p>
                         </div>
-                        <p className="text-gray-400 text-sm">of {totalPlayers} players</p>
+                        <p className="text-text-muted text-sm">of {totalPlayers} players</p>
                     </div>
-                </div>
+                </Card>
             )}
 
             {/* Leaderboard List */}
             {isLoading ? (
                 <div className="text-center py-12">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-500 mx-auto mb-4"></div>
-                    <p className="text-gray-400">Loading leaderboard...</p>
+                    <div className="skeleton w-10 h-10 rounded-full mx-auto mb-4" />
+                    <p className="text-text-muted">Loading leaderboard...</p>
                 </div>
             ) : entries.length === 0 ? (
                 <div className="text-center py-12">
-                    <p className="text-6xl mb-4">🏆</p>
-                    <p className="text-gray-400 text-lg">No entries yet</p>
-                    <p className="text-gray-500 text-sm mt-2">Be the first to submit a score!</p>
+                    <p className="text-text-muted text-lg">No entries yet</p>
+                    <p className="text-text-muted text-sm mt-2">Be the first to submit a score!</p>
                 </div>
             ) : (
-                <div className="space-y-2">
+                <div className="space-y-1">
                     {entries.map((entry, i) => (
                         <div
                             key={i}
-                            className={`flex items-center gap-4 p-4 rounded-xl transition-all ${entry.is_current_user
-                                    ? 'bg-primary-500/20 border border-primary-500/30'
-                                    : 'bg-dark-800 hover:bg-dark-700'
-                                }`}
+                            className={`flex items-center gap-4 p-4 border-b border-border-subtle ${
+                                entry.is_current_user ? 'bg-primary/10' : ''
+                            }`}
                         >
                             {/* Rank */}
-                            <div className={`w-12 text-center font-bold text-lg ${getRankColor(entry.rank)}`}>
-                                {getRankEmoji(entry.rank)}
+                            <div className={`w-14 text-center font-bold text-sm font-mono ${getRankColor(entry.rank)}`}>
+                                {getRankLabel(entry.rank)}
                             </div>
 
                             {/* Name */}
                             <div className="flex-1">
-                                <p className={`font-bold ${entry.is_current_user ? 'text-primary-400' : 'text-white'}`}>
+                                <p className={`font-medium ${entry.is_current_user ? 'text-primary' : 'text-text-primary'}`}>
                                     {entry.display_name}
                                     {entry.is_current_user && ' (You)'}
                                 </p>
                                 {activeTab === 'alltime' && entry.games_played && (
-                                    <p className="text-gray-500 text-xs">
-                                        {entry.games_played} games • {entry.accuracy_pct?.toFixed(0)}% accuracy
+                                    <p className="text-text-muted text-xs">
+                                        {entry.games_played} games · {entry.accuracy_pct?.toFixed(0)}% accuracy
                                     </p>
                                 )}
                             </div>
 
                             {/* Score */}
                             <div className="text-right">
-                                <p className="text-white font-bold text-lg">
+                                <p className="text-text-primary font-bold font-mono">
                                     {activeTab === 'daily' ? entry.score : entry.lifetime_score}
                                 </p>
-                                <p className="text-gray-500 text-xs">points</p>
+                                <p className="text-text-muted text-xs">points</p>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
-        </div>
+        </AppShell>
     )
 }

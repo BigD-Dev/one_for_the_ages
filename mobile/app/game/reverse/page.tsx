@@ -7,9 +7,11 @@ import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
 import { GameLayout } from '@/components/game/GameLayout'
 import { ZodiacGrid } from '@/components/game/ZodiacGrid'
-import { EnhancedCelebrityImage } from '@/components/ui/EnhancedCelebrityImage'
+import { CelebrityImage } from '@/components/ui/CelebrityImage'
 import { Card } from '@/components/ui/Card'
-import { ImagePlaceholder } from '@/components/ui/ImagePlaceholder'
+import { GameLoadingSkeleton } from '@/components/ui/SkeletonLoader'
+import { AppShell } from '@/components/ui/Layout'
+import { Lightbulb } from 'lucide-react'
 
 export default function ReverseModePage() {
     const router = useRouter()
@@ -76,10 +78,10 @@ export default function ReverseModePage() {
             submitAnswer(result.is_correct, result.score_awarded)
 
             if (result.is_correct) {
-                setFeedback(`🎉 Correct! ${currentQuestion.celebrity_name!} is a ${signName}! +${result.score_awarded}`)
+                setFeedback(`Correct! ${currentQuestion.celebrity_name!} is a ${signName}! +${result.score_awarded}`)
             } else {
                 const correctSign = result.correct_answer?.sign || 'Unknown'
-                setFeedback(`❌ ${currentQuestion.celebrity_name!} is actually a ${correctSign}`)
+                setFeedback(`${currentQuestion.celebrity_name!} is actually a ${correctSign}`)
             }
 
             setTimeout(() => {
@@ -110,19 +112,9 @@ export default function ReverseModePage() {
 
     if (isLoading || !currentQuestion) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-bg-primary">
-                <div className="text-center">
-                    <ImagePlaceholder
-                        width={48}
-                        height={48}
-                        variant="pulse"
-                        className="mx-auto mb-lg rounded-full"
-                    >
-                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    </ImagePlaceholder>
-                    <p className="text-text-secondary">Loading Reverse Mode...</p>
-                </div>
-            </div>
+            <AppShell className="flex items-center justify-center">
+                <GameLoadingSkeleton />
+            </AppShell>
         )
     }
 
@@ -130,65 +122,48 @@ export default function ReverseModePage() {
         <GameLayout
             gameMode={{
                 name: 'Reverse Mode',
-                icon: '🔮',
-                theme: 'mystic'
+                icon: '♈',
             }}
             score={score}
             streak={streak}
             currentQuestion={currentQuestionIndex + 1}
             totalQuestions={questions.length}
         >
-            {/* Celebrity Card with Enhanced Image */}
-            <Card variant="hero" className="mb-xl">
-                <div className="p-xl text-center">
-                    <h2 className="text-headline font-bold text-text-primary mb-md">
-                        What's their star sign?
-                    </h2>
+            {/* Celebrity Card */}
+            <Card className="p-6 text-center mb-6">
+                <h2 className="text-lg text-text-muted mb-4">
+                    What's their star sign?
+                </h2>
 
-                    <EnhancedCelebrityImage
+                <div className="flex justify-center mb-4">
+                    <CelebrityImage
                         name={currentQuestion.celebrity_name!}
-                        size="hero"
-                        className="mx-auto mb-lg"
-                    >
-                        {/* Celebrity name overlay */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-lg">
-                            <h3 className="text-title font-bold text-white text-shadow-sm">
-                                {currentQuestion.celebrity_name!}
-                            </h3>
-                        </div>
-                    </EnhancedCelebrityImage>
-
-                    {/* Hints Section */}
-                    {showHint && currentQuestion.hints?.length > 0 && (
-                        <Card variant="elevated" className="mb-lg">
-                            <div className="p-lg">
-                                <div className="flex items-center gap-xs mb-sm">
-                                    <span className="text-lg">💡</span>
-                                    <span className="text-caption text-primary font-bold uppercase tracking-wide">
-                                        Hint
-                                    </span>
-                                </div>
-                                <p className="text-body text-text-secondary">
-                                    {currentQuestion.hints[0]}
-                                </p>
-                            </div>
-                        </Card>
-                    )}
-
-                    {!showHint && currentQuestion.hints?.length > 0 && (
-                        <Card
-                            variant="interactive"
-                            onClick={() => setShowHint(true)}
-                            className="mb-lg cursor-pointer"
-                        >
-                            <div className="p-lg text-center">
-                                <span className="text-body text-text-secondary">
-                                    💡 Show Hint
-                                </span>
-                            </div>
-                        </Card>
-                    )}
+                        size="xl"
+                    />
                 </div>
+
+                <h3 className="text-2xl font-bold text-gold font-serif">
+                    {currentQuestion.celebrity_name!}
+                </h3>
+
+                {/* Hints */}
+                {showHint && currentQuestion.hints?.length > 0 && (
+                    <Card className="p-4 mt-4 text-left">
+                        <div className="flex items-start gap-2">
+                            <Lightbulb size={16} className="text-gold mt-0.5" />
+                            <p className="text-sm text-text-muted">{currentQuestion.hints[0]}</p>
+                        </div>
+                    </Card>
+                )}
+
+                {!showHint && currentQuestion.hints?.length > 0 && (
+                    <button
+                        onClick={() => setShowHint(true)}
+                        className="mt-4 text-sm text-text-muted underline underline-offset-4 active:opacity-80 transition-opacity duration-150"
+                    >
+                        Show Hint
+                    </button>
+                )}
             </Card>
 
             {/* Zodiac Grid */}
@@ -197,25 +172,20 @@ export default function ReverseModePage() {
                 selectedSign={selectedSign}
                 disabled={!!feedback}
                 feedback={feedback}
-                variant="default"
-                showElements
-                className="mb-xl"
+                className="mb-6"
             />
 
             {/* Feedback */}
             {feedback && (
-                <Card
-                    variant="elevated"
-                    className={`mb-xl ${
+                <div
+                    className={`p-4 rounded-sharp border text-center animate-fade-in ${
                         feedback.includes('Correct')
-                            ? 'border-green-500 bg-green-500/10'
-                            : 'border-red-500 bg-red-500/10'
+                            ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                            : 'bg-red-500/10 border-red-500/30 text-red-400'
                     }`}
                 >
-                    <div className="p-lg text-center">
-                        <p className="text-body text-text-primary">{feedback}</p>
-                    </div>
-                </Card>
+                    <p>{feedback}</p>
+                </div>
             )}
         </GameLayout>
     )

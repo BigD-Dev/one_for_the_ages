@@ -10,7 +10,7 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 export const Card = ({ children, className = '', onClick, ...props }: CardProps) => {
     return (
         <div
-            className={`border border-gray-200 dark:border-gray-800 rounded-lg p-4 bg-white dark:bg-gray-900 ${className} ${onClick ? 'cursor-pointer' : ''}`}
+            className={`bg-surface border border-border-subtle rounded-sharp ${onClick ? 'cursor-pointer active:opacity-80 transition-opacity duration-150' : ''} ${className}`}
             onClick={onClick}
             {...props}
         >

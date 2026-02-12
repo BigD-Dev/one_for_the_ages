@@ -2,19 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
 import { AppShell } from '@/components/ui/Layout'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { CelebrityImage } from '@/components/ui/CelebrityImage'
 import { ResultOverlay } from '@/components/ui/ResultOverlay'
 import { GameLoadingSkeleton } from '@/components/ui/SkeletonLoader'
-import { PageTransition, FadeIn } from '@/components/ui/PageTransition'
 import { useGameStore } from '@/store/useGameStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
 import { Haptics, ImpactStyle } from '@capacitor/haptics'
-import { Flame, ArrowLeft, Zap } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 
 export default function WhosOlderPage() {
     const router = useRouter()
@@ -151,165 +149,120 @@ export default function WhosOlderPage() {
         return 'default'
     }
 
-    const getChoiceCardClassName = (choice: 'A' | 'B') => {
+    const getChoiceCardClass = (choice: 'A' | 'B') => {
         const state = getCelebChoiceState(choice)
-        const baseClass = "group relative overflow-hidden"
 
         if (showResult) {
             switch (state) {
                 case 'correct':
-                    return `${baseClass} ring-2 ring-green-500 bg-gradient-to-br from-green-500/20 to-emerald-500/10`
+                    return 'border-green-500'
                 case 'incorrect':
-                    return `${baseClass} ring-2 ring-red-500 bg-gradient-to-br from-red-500/20 to-pink-500/10`
+                    return 'border-red-500'
                 default:
-                    return `${baseClass} opacity-60`
+                    return 'opacity-60'
             }
         }
 
-        return `${baseClass} hover:ring-1 hover:ring-primary/50 cursor-pointer`
+        return 'cursor-pointer'
     }
 
+    const progressPct = ((currentQuestionIndex + 1) / questions.length) * 100
+
     return (
-        <AppShell theme="default">
-            <PageTransition>
-                {/* Top HUD */}
-                <FadeIn delay={0}>
-                    <header className="flex justify-between items-center mb-6">
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.push('/')}
-                            className="text-text-muted hover:text-text-primary"
-                        >
-                            <ArrowLeft size={18} className="mr-1" />
-                            Exit
-                        </Button>
+        <AppShell>
+            {/* Top HUD */}
+            <header className="flex justify-between items-center mb-6">
+                <Button
+                    variant="ghost"
+                    onClick={() => router.push('/')}
+                    className="text-text-muted"
+                >
+                    <ArrowLeft size={18} className="mr-1" />
+                    Exit
+                </Button>
 
-                        <div className="flex items-center gap-4">
-                            <div className="text-center">
-                                <p className="text-xs text-text-muted uppercase tracking-wide">Score</p>
-                                <p className="text-lg font-bold text-primary">{score}</p>
-                            </div>
-                            <motion.div
-                                className="flex items-center gap-1 px-2 py-1 bg-bg-surface rounded-full border border-border-subtle"
-                                animate={streak > 0 ? { scale: [1, 1.15, 1] } : {}}
-                                transition={{ duration: 0.3 }}
-                                key={streak}
-                            >
-                                <Flame size={14} className="text-orange-500" fill="currentColor" />
-                                <span className="text-sm font-bold text-orange-100">{streak}</span>
-                            </motion.div>
+                <div className="flex items-center gap-4">
+                    <div className="text-center">
+                        <p className="text-xs text-text-muted uppercase tracking-wide">Score</p>
+                        <p className="text-lg font-bold text-primary font-mono">{score}</p>
+                    </div>
+                    {streak > 0 && (
+                        <div className="text-center">
+                            <p className="text-xs text-text-muted uppercase tracking-wide">Streak</p>
+                            <p className="text-lg font-bold text-gold font-mono">{streak}</p>
                         </div>
-                    </header>
-                </FadeIn>
+                    )}
+                </div>
+            </header>
 
-                {/* Progress */}
-                <FadeIn delay={0.05}>
-                    <div className="mb-6">
-                        <div className="flex justify-between items-center mb-2">
-                            <span className="text-xs text-text-muted uppercase tracking-wide">
-                                Question {currentQuestionIndex + 1} of {questions.length}
-                            </span>
-                            <div className="flex items-center gap-1 text-xs text-text-muted">
-                                <Zap size={12} />
-                                Speed Round
-                            </div>
-                        </div>
-                        <div className="w-full bg-bg-surface rounded-full h-1 overflow-hidden">
-                            <motion.div
-                                className="bg-emerald-500 h-1 rounded-full"
-                                initial={{ width: 0 }}
-                                animate={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
-                                transition={{ duration: 0.5, ease: 'easeOut' }}
-                            />
+            {/* Progress */}
+            <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs text-text-muted uppercase tracking-wide font-mono">
+                        Question {currentQuestionIndex + 1} of {questions.length}
+                    </span>
+                </div>
+                <div className="w-full bg-surface rounded-sharp h-1 overflow-hidden">
+                    <div
+                        className="bg-primary h-1 rounded-sharp"
+                        style={{ width: `${progressPct}%`, transition: 'width 300ms ease-out' }}
+                    />
+                </div>
+            </div>
+
+            {/* Title */}
+            <div className="text-center space-y-2 mb-6">
+                <h1 className="text-2xl font-bold text-text-primary font-serif">Who's Older?</h1>
+                <p className="text-text-muted text-sm">Tap the older celebrity</p>
+            </div>
+
+            {/* Celebrity Comparison */}
+            <div className="space-y-4">
+                {/* Celebrity A */}
+                <Card
+                    className={`p-4 ${getChoiceCardClass('A')}`}
+                    onClick={() => !showResult && handleSelect('A')}
+                >
+                    <div className="flex items-center gap-4">
+                        <CelebrityImage
+                            name={currentQuestion.celebrity_name_a!}
+                            size="lg"
+                        />
+                        <div className="flex-1 text-left">
+                            <h3 className="text-lg font-semibold text-text-primary font-serif">
+                                {currentQuestion.celebrity_name_a!}
+                            </h3>
+                            <p className="text-sm text-text-muted">Tap to select</p>
                         </div>
                     </div>
-                </FadeIn>
+                </Card>
 
-                {/* Game Stage */}
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={currentQuestionIndex}
-                        className="flex-1 flex flex-col justify-center space-y-6"
-                        initial={{ opacity: 0, x: 30 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -30 }}
-                        transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-                    >
-                        <div className="text-center space-y-2">
-                            <h1 className="text-2xl font-bold gradient-text-animated">Who's Older?</h1>
-                            <p className="text-text-muted">Tap the older celebrity</p>
+                {/* VS Divider */}
+                <div className="text-center">
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-surface border border-gold/30">
+                        <span className="text-sm font-bold text-gold">VS</span>
+                    </div>
+                </div>
+
+                {/* Celebrity B */}
+                <Card
+                    className={`p-4 ${getChoiceCardClass('B')}`}
+                    onClick={() => !showResult && handleSelect('B')}
+                >
+                    <div className="flex items-center gap-4">
+                        <CelebrityImage
+                            name={currentQuestion.celebrity_name_b!}
+                            size="lg"
+                        />
+                        <div className="flex-1 text-left">
+                            <h3 className="text-lg font-semibold text-text-primary font-serif">
+                                {currentQuestion.celebrity_name_b!}
+                            </h3>
+                            <p className="text-sm text-text-muted">Tap to select</p>
                         </div>
-
-                        {/* Celebrity Comparison */}
-                        <div className="space-y-4">
-                            {/* Celebrity A */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.1 }}
-                            >
-                                <Card
-                                    variant="glass"
-                                    className={getChoiceCardClassName('A')}
-                                    onClick={() => !showResult && handleSelect('A')}
-                                >
-                                    <div className="p-4 flex items-center gap-4">
-                                        <CelebrityImage
-                                            name={currentQuestion.celebrity_name_a!}
-                                            size="lg"
-                                        />
-                                        <div className="flex-1 text-left">
-                                            <h3 className="text-lg font-semibold text-text-primary">
-                                                {currentQuestion.celebrity_name_a!}
-                                            </h3>
-                                            <p className="text-sm text-text-muted">Tap to select</p>
-                                        </div>
-                                    </div>
-                                </Card>
-                            </motion.div>
-
-                            {/* VS Divider */}
-                            <motion.div
-                                className="text-center"
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                transition={{ delay: 0.2, type: 'spring', stiffness: 300 }}
-                            >
-                                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-bg-surface border border-border-subtle">
-                                    <span className="text-sm font-bold text-text-muted">VS</span>
-                                </div>
-                            </motion.div>
-
-                            {/* Celebrity B */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.3 }}
-                            >
-                                <Card
-                                    variant="glass"
-                                    className={getChoiceCardClassName('B')}
-                                    onClick={() => !showResult && handleSelect('B')}
-                                >
-                                    <div className="p-4 flex items-center gap-4">
-                                        <CelebrityImage
-                                            name={currentQuestion.celebrity_name_b!}
-                                            size="lg"
-                                        />
-                                        <div className="flex-1 text-left">
-                                            <h3 className="text-lg font-semibold text-text-primary">
-                                                {currentQuestion.celebrity_name_b!}
-                                            </h3>
-                                            <p className="text-sm text-text-muted">Tap to select</p>
-                                        </div>
-                                    </div>
-                                </Card>
-                            </motion.div>
-                        </div>
-                    </motion.div>
-                </AnimatePresence>
-            </PageTransition>
+                    </div>
+                </Card>
+            </div>
 
             {/* Result Overlay */}
             {lastResult && (
