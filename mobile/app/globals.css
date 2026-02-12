@@ -98,4 +98,26 @@ body {
   .text-glow {
     text-shadow: 0 0 10px var(--accent-glow);
   }
+
+  .loading-line {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .loading-line::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
+    animation: loading-slide 2s ease-in-out infinite;
+  }
+
+  @keyframes loading-slide {
+    0% { left: -100%; }
+    50% { left: 0%; }
+    100% { left: 100%; }
+  }
 }

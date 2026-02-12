@@ -2,10 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { AppShell } from '@/components/ui/Layout'
+import { Card } from '@/components/ui/Card'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { CelebrityImage } from '@/components/ui/CelebrityImage'
+import { ResultOverlay } from '@/components/ui/ResultOverlay'
 import { useGameStore } from '@/store/useGameStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
 import { Haptics, ImpactStyle } from '@capacitor/haptics'
+import { Flame, Lightbulb, ArrowLeft } from 'lucide-react'
 
 export default function AgeGuessPage() {
     const router = useRouter()
@@ -24,9 +31,10 @@ export default function AgeGuessPage() {
     } = useGameStore()
 
     const [guess, setGuess] = useState('')
-    const [feedback, setFeedback] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [showHint, setShowHint] = useState(false)
+    const [showResult, setShowResult] = useState(false)
+    const [lastResult, setLastResult] = useState<any>(null)
 
     const currentQuestion = questions[currentQuestionIndex]
     const isLastQuestion = currentQuestionIndex === questions.length - 1
@@ -61,7 +69,6 @@ export default function AgeGuessPage() {
 
         const userGuess = parseInt(guess, 10)
         if (isNaN(userGuess) || userGuess < 0 || userGuess > 120) {
-            setFeedback('Please enter a valid age (0-120)')
             return
         }
 
@@ -86,31 +93,38 @@ export default function AgeGuessPage() {
             // Update game state
             submitAnswer(result.is_correct, result.score_awarded)
 
-            // Show feedback
+            // Show result overlay
             const correctAge = result.correct_answer.age
             const error = Math.abs(userGuess - correctAge)
 
+            let feedbackText
             if (result.is_correct) {
-                setFeedback(`🎉 Correct! ${currentQuestion.celebrity_name} is ${correctAge} years old. +${result.score_awarded} points!`)
+                feedbackText = `Perfect! ${currentQuestion.celebrity_name} is ${correctAge} years old.`
             } else {
-                setFeedback(`❌ Not quite! ${currentQuestion.celebrity_name} is ${correctAge} years old (you were ${error} years off)`)
+                feedbackText = `${currentQuestion.celebrity_name} is ${correctAge} years old. You were ${error} year${error !== 1 ? 's' : ''} off.`
             }
 
-            // Move to next question after delay
-            setTimeout(() => {
-                if (isLastQuestion) {
-                    handleEndGame()
-                } else {
-                    nextQuestion()
-                    setGuess('')
-                    setFeedback(null)
-                    setShowHint(false)
-                }
-            }, 2500)
+            setLastResult({
+                ...result,
+                userGuess,
+                feedbackText,
+                celebrityName: currentQuestion.celebrity_name
+            })
+            setShowResult(true)
 
         } catch (error) {
             console.error('Failed to submit answer:', error)
-            setFeedback('Failed to submit answer. Please try again.')
+        }
+    }
+
+    const handleNextQuestion = () => {
+        setShowResult(false)
+        if (isLastQuestion) {
+            handleEndGame()
+        } else {
+            nextQuestion()
+            setGuess('')
+            setShowHint(false)
         }
     }
 
@@ -126,98 +140,134 @@ export default function AgeGuessPage() {
 
     if (isLoading || !currentQuestion) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-dark-950">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto mb-4"></div>
-                    <p className="text-gray-400">Loading game...</p>
+            <AppShell className="flex items-center justify-center">
+                <div className="text-center space-y-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+                    <p className="text-text-muted">Loading game...</p>
                 </div>
-            </div>
+            </AppShell>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-dark-950 to-dark-900 p-6">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <p className="text-sm text-gray-400">Question {currentQuestionIndex + 1}/{questions.length}</p>
-                    <p className="text-2xl font-bold text-primary-400">Score: {score}</p>
+        <AppShell>
+            {/* Top HUD */}
+            <header className="flex justify-between items-center mb-6">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => router.push('/')}
+                    className="text-text-muted hover:text-text-primary"
+                >
+                    <ArrowLeft size={18} className="mr-1" />
+                    Exit
+                </Button>
+
+                <div className="flex items-center gap-4">
+                    <div className="text-center">
+                        <p className="text-xs text-text-muted uppercase tracking-wide">Score</p>
+                        <p className="text-lg font-bold text-primary">{score}</p>
+                    </div>
+                    <div className="flex items-center gap-1 px-2 py-1 bg-bg-surface rounded-full border border-border-subtle">
+                        <Flame size={14} className="text-orange-500" fill="currentColor" />
+                        <span className="text-sm font-bold text-orange-100">{streak}</span>
+                    </div>
                 </div>
-                <div className="text-right">
-                    <p className="text-sm text-gray-400">Streak</p>
-                    <p className="text-2xl font-bold text-orange-400">{streak} 🔥</p>
+            </header>
+
+            {/* Progress */}
+            <div className="mb-6">
+                <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs text-text-muted uppercase tracking-wide">
+                        Question {currentQuestionIndex + 1} of {questions.length}
+                    </span>
+                </div>
+                <div className="w-full bg-bg-surface rounded-full h-1">
+                    <div
+                        className="bg-primary h-1 rounded-full transition-all duration-300"
+                        style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
+                    />
                 </div>
             </div>
 
-            {/* Question Card */}
-            <div className="bg-dark-800 rounded-2xl p-8 mb-6 shadow-xl">
-                <h2 className="text-3xl font-bold text-white mb-4 text-center">
-                    How old is...
-                </h2>
-                <p className="text-4xl font-bold text-primary-400 text-center mb-6">
-                    {currentQuestion.celebrity_name}?
-                </p>
-
-                {/* Hints */}
-                {showHint && currentQuestion.hints && currentQuestion.hints.length > 0 && (
-                    <div className="bg-dark-700 rounded-lg p-4 mb-6">
-                        <p className="text-sm text-gray-400 mb-2">💡 Hint:</p>
-                        <p className="text-white">{currentQuestion.hints[0]}</p>
+            {/* Game Stage */}
+            <div className="flex-1 flex flex-col justify-center space-y-6">
+                {/* Celebrity Card */}
+                <Card variant="glass" className="p-6 text-center space-y-4">
+                    <div className="flex justify-center">
+                        <CelebrityImage name={currentQuestion.celebrity_name} size="xl" />
                     </div>
-                )}
 
-                {!showHint && currentQuestion.hints && currentQuestion.hints.length > 0 && (
-                    <button
-                        onClick={() => setShowHint(true)}
-                        className="w-full bg-dark-700 hover:bg-dark-600 text-gray-300 py-2 px-4 rounded-lg mb-6 transition-colors"
-                    >
-                        💡 Show Hint
-                    </button>
-                )}
+                    <div className="space-y-2">
+                        <h2 className="text-lg font-medium text-text-secondary">How old is</h2>
+                        <h1 className="text-2xl font-bold text-text-primary">
+                            {currentQuestion.celebrity_name}?
+                        </h1>
+                    </div>
 
-                {/* Input */}
-                <div className="mb-6">
-                    <input
+                    {/* Hints */}
+                    {showHint && currentQuestion.hints && currentQuestion.hints.length > 0 && (
+                        <Card className="p-3 bg-bg-surface-active border-border-active">
+                            <div className="flex items-start gap-2">
+                                <Lightbulb size={16} className="text-yellow-500 mt-0.5" />
+                                <p className="text-sm text-text-secondary">{currentQuestion.hints[0]}</p>
+                            </div>
+                        </Card>
+                    )}
+
+                    {!showHint && currentQuestion.hints && currentQuestion.hints.length > 0 && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowHint(true)}
+                            className="border-border-subtle text-text-muted"
+                        >
+                            <Lightbulb size={14} className="mr-1" />
+                            Show Hint
+                        </Button>
+                    )}
+                </Card>
+            </div>
+
+            {/* Action Area */}
+            <div className="space-y-4 pb-4">
+                <div className="space-y-3">
+                    <Input
                         type="number"
                         value={guess}
                         onChange={(e) => setGuess(e.target.value)}
-                        placeholder="Enter age..."
-                        className="w-full bg-dark-700 text-white text-2xl text-center py-4 px-6 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="Enter age (0-120)"
+                        className="text-center text-xl"
                         min="0"
                         max="120"
-                        disabled={!!feedback}
+                        disabled={showResult}
                     />
-                </div>
 
-                {/* Feedback */}
-                {feedback && (
-                    <div className={`p-4 rounded-lg mb-6 ${feedback.includes('Correct')
-                            ? 'bg-green-900/30 border border-green-500'
-                            : 'bg-red-900/30 border border-red-500'
-                        }`}>
-                        <p className="text-white text-center">{feedback}</p>
-                    </div>
-                )}
-
-                {/* Submit Button */}
-                {!feedback && (
-                    <button
+                    <Button
                         onClick={handleSubmit}
-                        disabled={!guess}
-                        className="w-full bg-primary-500 hover:bg-primary-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-bold py-4 px-6 rounded-lg transition-colors text-xl"
+                        disabled={!guess || showResult}
+                        className="w-full bg-gradient-to-r from-primary-from to-primary-to"
+                        size="lg"
                     >
                         Submit Answer
-                    </button>
-                )}
+                    </Button>
+                </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="w-full bg-dark-700 rounded-full h-2">
-                <div
-                    className="bg-primary-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
-                ></div>
-            </div>
-        </div>
+            {/* Result Overlay */}
+            {lastResult && (
+                <ResultOverlay
+                    isVisible={showResult}
+                    isCorrect={lastResult.is_correct}
+                    celebrityName={lastResult.celebrityName}
+                    correctAnswer={lastResult.correct_answer}
+                    userAnswer={{ age: lastResult.userGuess }}
+                    scoreAwarded={lastResult.score_awarded}
+                    feedbackText={lastResult.feedbackText}
+                    onNext={handleNextQuestion}
+                    mode="age-guess"
+                />
+            )}
+        </AppShell>
     )
 }

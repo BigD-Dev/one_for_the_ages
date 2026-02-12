@@ -5,7 +5,16 @@
 
 set -e
 
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+BACKEND_DIR="$SCRIPT_DIR/backend"
+MOBILE_DIR="$SCRIPT_DIR/mobile"
+
 echo "🎮 Starting One for the Ages..."
+echo ""
+
+# First, stop any existing instances
+"$SCRIPT_DIR/stop_server.sh"
 echo ""
 
 # Colors
@@ -13,11 +22,6 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
-
-# Get the directory where this script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-BACKEND_DIR="$SCRIPT_DIR/backend"
-MOBILE_DIR="$SCRIPT_DIR/mobile"
 
 # Check if backend .env exists
 if [ ! -f "$BACKEND_DIR/.env" ]; then
