@@ -76,10 +76,10 @@ export default function ReverseModePage() {
             submitAnswer(result.is_correct, result.score_awarded)
 
             if (result.is_correct) {
-                setFeedback(`🎉 Correct! ${currentQuestion.celebrity_name} is a ${signName}! +${result.score_awarded}`)
+                setFeedback(`🎉 Correct! ${currentQuestion.celebrity_name!} is a ${signName}! +${result.score_awarded}`)
             } else {
                 const correctSign = result.correct_answer?.sign || 'Unknown'
-                setFeedback(`❌ ${currentQuestion.celebrity_name} is actually a ${correctSign}`)
+                setFeedback(`❌ ${currentQuestion.celebrity_name!} is actually a ${correctSign}`)
             }
 
             setTimeout(() => {
@@ -146,14 +146,14 @@ export default function ReverseModePage() {
                     </h2>
 
                     <EnhancedCelebrityImage
-                        name={currentQuestion.celebrity_name}
+                        name={currentQuestion.celebrity_name!}
                         size="hero"
                         className="mx-auto mb-lg"
                     >
                         {/* Celebrity name overlay */}
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-lg">
                             <h3 className="text-title font-bold text-white text-shadow-sm">
-                                {currentQuestion.celebrity_name}
+                                {currentQuestion.celebrity_name!}
                             </h3>
                         </div>
                     </EnhancedCelebrityImage>

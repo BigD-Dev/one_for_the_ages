@@ -1,6 +1,6 @@
 'use client'
 
-import { ReactNode, useEffect, useRef } from 'react'
+import { ReactNode } from 'react'
 import { motion } from 'framer-motion'
 
 interface AppShellProps {

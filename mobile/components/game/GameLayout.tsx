@@ -2,7 +2,7 @@
 
 import { ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeftIcon } from '@heroicons/react/24/outline'
+import { ArrowLeft } from 'lucide-react'
 import { Card } from '../ui/Card'
 
 interface GameLayoutProps {
@@ -128,7 +128,7 @@ export const GameLayout = ({
                                 className="p-2 rounded-xl bg-bg-surface border border-border-subtle hover:bg-bg-surface-active transition-colors"
                                 aria-label="Go back"
                             >
-                                <ArrowLeftIcon className="w-5 h-5 text-text-primary" />
+                                <ArrowLeft className="w-5 h-5 text-text-primary" />
                             </button>
                             <div>
                                 <div className="flex items-center gap-xs mb-1">

@@ -7,7 +7,7 @@ import os
 import logging
 from typing import Optional
 from fastapi import HTTPException, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import firebase_admin
 from firebase_admin import credentials, auth
 from dotenv import load_dotenv
@@ -58,7 +58,7 @@ security = HTTPBearer()
 
 
 async def verify_firebase_token(
-    credentials: HTTPAuthCredentials = Depends(security)
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> dict:
     """
     Verify Firebase ID token and return decoded token.
@@ -123,7 +123,7 @@ async def get_current_user(
 
 
 async def get_optional_user(
-    credentials: Optional[HTTPAuthCredentials] = Depends(HTTPBearer(auto_error=False))
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False))
 ) -> Optional[dict]:
     """
     Get current user if authenticated, otherwise None.

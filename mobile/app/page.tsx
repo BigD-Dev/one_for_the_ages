@@ -3,144 +3,169 @@
 import Link from 'next/link'
 import { AppShell } from '@/components/ui/Layout'
 import { Card } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
-import { Trophy, Flame, Play, Star, Sparkles, Zap, Timer, ArrowRight, User, Settings, Crown } from 'lucide-react'
+import { Trophy, Flame, Play, Sparkles, Zap, Crown, User, Settings } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 export default function Home() {
     return (
         <AppShell>
-            {/* Top HUD */}
-            <header className="flex justify-between items-center mb-10 pt-2 px-1">
-                <div className="flex flex-col">
-                    <h1 className="text-3xl font-extrabold tracking-tighter bg-gradient-to-r from-primary-from to-primary-to bg-clip-text text-transparent">
+            <div className="flex flex-col h-full">
+                {/* Top Header */}
+                <header className="flex justify-between items-center py-6 px-1">
+                    <motion.h1
+                        className="text-5xl font-black tracking-tighter gradient-text-animated"
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                    >
                         OFTA
-                    </h1>
-                    <span className="text-[10px] text-text-muted font-bold tracking-[0.2em] uppercase opacity-70">
-                        One for the Ages
-                    </span>
-                </div>
+                    </motion.h1>
 
-                <div className="flex gap-3">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-surface rounded-full border border-border-subtle">
-                        <Flame size={16} className="text-orange-500" fill="currentColor" />
-                        <span className="text-sm font-bold text-orange-100">3</span>
-                    </div>
-                </div>
-            </header>
+                    <motion.div
+                        className="flex items-center gap-2 px-4 py-2 glass rounded-full"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        whileHover={{ scale: 1.05 }}
+                    >
+                        <Flame size={18} className="text-orange-500 fill-orange-500" />
+                        <span className="text-base font-bold text-white">3</span>
+                    </motion.div>
+                </header>
 
-            {/* Daily Challenge (Hero) */}
-            <section className="mb-8">
-                <div className="flex justify-between items-end mb-3 px-1">
-                    <h2 className="text-sm font-bold text-text-secondary uppercase tracking-widest">Daily Ritual</h2>
-                    <span className="text-xs text-text-muted flex items-center gap-1">
-                        <Timer size={12} /> Resets in 04:22
-                    </span>
-                </div>
+                {/* Main Content - Scrollable */}
+                <div className="flex-1 overflow-y-auto pb-6 space-y-8">
 
-                <Card
-                    variant="glass"
-                    className="p-1 relative overflow-hidden group border-yellow-500/30 bg-gradient-to-br from-yellow-500/10 to-transparent"
-                >
-                    <div className="absolute top-0 right-0 p-3 opacity-20">
-                        <Crown size={80} className="text-yellow-500 transform rotate-12 group-hover:scale-110 transition-transform" />
-                    </div>
-
-                    <div className="p-5 relative z-10">
-                        <div className="flex items-start justify-between mb-4">
-                            <Badge variant="warn" className="bg-yellow-500/20 text-yellow-200 border-yellow-500/30">
-                                LIMITED TIME
-                            </Badge>
+                    {/* Daily Challenge - Hero Card */}
+                    <motion.section
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 }}
+                    >
+                        <div className="flex justify-between items-center mb-4 px-1">
+                            <h2 className="text-xs font-bold text-white/50 uppercase tracking-widest">
+                                Today's Challenge
+                            </h2>
+                            <div className="text-xs font-mono text-amber-300 bg-amber-500/10 px-3 py-1.5 rounded-full border border-amber-500/30">
+                                04:22:10
+                            </div>
                         </div>
 
-                        <h3 className="text-2xl font-bold text-white mb-1">Daily Challenge</h3>
-                        <p className="text-yellow-200/70 text-sm mb-6 max-w-[80%]">
-                            10 questions. One attempt. Global glory.
-                        </p>
-
-                        <Button href="/game/daily" className="w-full bg-gradient-to-r from-yellow-600 to-yellow-700 hover:shadow-yellow-500/20 border border-white/10">
-                            <Play size={18} className="mr-2" /> Play Today's 10
-                        </Button>
-                    </div>
-                </Card>
-            </section>
-
-            {/* Game Modes */}
-            <section className="flex-1">
-                <h2 className="text-sm font-bold text-text-secondary uppercase tracking-widest mb-3 px-1">Game Modes</h2>
-
-                <div className="grid grid-cols-1 gap-3">
-                    {/* Age Guess */}
-                    <Link href="/game/age-guess">
-                        <Card variant="glass" className="p-4 flex items-center justify-between group hover:border-primary/50 transition-colors">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 transition-colors">
-                                    <Sparkles size={24} />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-text-primary text-lg">Age Guess</h3>
-                                    <p className="text-xs text-text-muted">The classic mode</p>
-                                </div>
+                        <Card className="relative overflow-hidden border-amber-500/40 bg-gradient-to-br from-amber-950/60 via-amber-900/30 to-black/60">
+                            {/* Background Crown */}
+                            <div className="absolute -top-4 -right-8 opacity-[0.07]">
+                                <Crown size={180} className="text-amber-400 rotate-12" />
                             </div>
-                            <div className="w-8 h-8 rounded-full bg-bg-surface-active flex items-center justify-center text-text-muted group-hover:text-primary transition-colors">
-                                <ArrowRight size={16} />
+
+                            <div className="relative p-6 space-y-4">
+                                {/* Badge */}
+                                <div className="inline-flex items-center px-3 py-1 bg-amber-500/20 text-amber-200 text-xs font-bold rounded-full border border-amber-500/40 uppercase tracking-wide">
+                                    <Crown size={12} className="mr-1.5" />
+                                    Limited Time
+                                </div>
+
+                                {/* Title */}
+                                <h3 className="text-4xl font-black text-white tracking-tight leading-none">
+                                    Daily<br />Challenge
+                                </h3>
+
+                                {/* Description */}
+                                <p className="text-amber-100/70 text-sm leading-relaxed max-w-[85%]">
+                                    10 questions. Global leaderboard. Beat the world average!
+                                </p>
+
+                                {/* CTA Button */}
+                                <Button
+                                    href="/game/daily"
+                                    className="w-full bg-gradient-to-r from-amber-500 via-amber-600 to-orange-600 hover:from-amber-400 hover:via-amber-500 hover:to-orange-500 shadow-lg shadow-amber-500/30 border border-amber-400/30"
+                                >
+                                    <Play size={20} className="fill-white" />
+                                    <span>Start Challenge</span>
+                                </Button>
                             </div>
                         </Card>
-                    </Link>
+                    </motion.section>
 
-                    {/* Who's Older */}
-                    <Link href="/game/whos-older">
-                        <Card variant="glass" className="p-4 flex items-center justify-between group hover:border-emerald-500/50 transition-colors">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 transition-colors">
-                                    <Zap size={24} />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-text-primary text-lg">Who's Older?</h3>
-                                    <p className="text-xs text-text-muted">Speed comparison</p>
-                                </div>
-                            </div>
-                            <div className="w-8 h-8 rounded-full bg-bg-surface-active flex items-center justify-center text-text-muted group-hover:text-emerald-400 transition-colors">
-                                <ArrowRight size={16} />
-                            </div>
-                        </Card>
-                    </Link>
+                    {/* Game Modes Grid */}
+                    <motion.section
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                    >
+                        <h2 className="text-xs font-bold text-white/50 uppercase tracking-widest mb-4 px-1">
+                            Game Modes
+                        </h2>
 
-                    {/* Reverse Mode */}
-                    <Link href="/game/reverse">
-                        <Card variant="glass" className="p-4 flex items-center justify-between group hover:border-purple-500/50 transition-colors">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 transition-colors">
-                                    <Star size={24} />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-text-primary text-lg">Astrology</h3>
-                                    <p className="text-xs text-text-muted">Guess the sign</p>
-                                </div>
-                            </div>
-                            <div className="w-8 h-8 rounded-full bg-bg-surface-active flex items-center justify-center text-text-muted group-hover:text-purple-400 transition-colors">
-                                <ArrowRight size={16} />
-                            </div>
-                        </Card>
-                    </Link>
+                        <div className="grid grid-cols-2 gap-4">
+                            {/* Age Guess */}
+                            <Link href="/game/age-guess" className="block">
+                                <Card className="h-44 p-6 flex flex-col justify-between hover:border-cyan-500/60 hover:shadow-cyan-500/20 hover:shadow-xl transition-all duration-300 group">
+                                    <div className="p-3.5 w-fit rounded-2xl bg-gradient-to-br from-cyan-500/30 to-blue-500/20 text-cyan-300 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                                        <Sparkles size={28} strokeWidth={2.5} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-black text-white text-xl leading-none mb-1.5">
+                                            Age<br/>Guess
+                                        </h3>
+                                        <p className="text-[10px] text-cyan-300/60 uppercase tracking-widest font-bold">
+                                            Classic Mode
+                                        </p>
+                                    </div>
+                                </Card>
+                            </Link>
+
+                            {/* Who's Older */}
+                            <Link href="/game/whos-older" className="block">
+                                <Card className="h-44 p-6 flex flex-col justify-between hover:border-emerald-500/60 hover:shadow-emerald-500/20 hover:shadow-xl transition-all duration-300 group">
+                                    <div className="p-3.5 w-fit rounded-2xl bg-gradient-to-br from-emerald-500/30 to-green-500/20 text-emerald-300 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                                        <Zap size={28} strokeWidth={2.5} fill="currentColor" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-black text-white text-xl leading-none mb-1.5">
+                                            Who's<br/>Older?
+                                        </h3>
+                                        <p className="text-[10px] text-emerald-300/60 uppercase tracking-widest font-bold">
+                                            Speed Round
+                                        </p>
+                                    </div>
+                                </Card>
+                            </Link>
+                        </div>
+                    </motion.section>
                 </div>
-            </section>
 
-            {/* Bottom Nav */}
-            <nav className="mt-8 grid grid-cols-3 gap-2">
-                <Button variant="ghost" size="sm" href="/leaderboard" className="flex flex-col h-auto py-2 gap-1 text-xs">
-                    <Trophy size={20} />
-                    <span>Rankings</span>
-                </Button>
-                <Button variant="ghost" size="sm" href="/profile" className="flex flex-col h-auto py-2 gap-1 text-xs">
-                    <User size={20} />
-                    <span>Profile</span>
-                </Button>
-                <Button variant="ghost" size="sm" href="/settings" className="flex flex-col h-auto py-2 gap-1 text-xs">
-                    <Settings size={20} />
-                    <span>Config</span>
-                </Button>
-            </nav>
+                {/* Bottom Navigation - Fixed */}
+                <nav className="pt-4 pb-safe">
+                    <motion.div
+                        className="glass rounded-3xl p-2 mx-2"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                    >
+                        <div className="grid grid-cols-3 gap-2">
+                            <Link href="/leaderboard">
+                                <div className="flex flex-col items-center py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 transition-colors cursor-pointer">
+                                    <Trophy size={22} className="text-white/70 mb-1.5" strokeWidth={2} />
+                                    <span className="text-[11px] font-bold text-white/60">Ranks</span>
+                                </div>
+                            </Link>
+
+                            <Link href="/profile">
+                                <div className="flex flex-col items-center py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 transition-colors cursor-pointer">
+                                    <User size={22} className="text-white/70 mb-1.5" strokeWidth={2} />
+                                    <span className="text-[11px] font-bold text-white/60">Profile</span>
+                                </div>
+                            </Link>
+
+                            <Link href="/settings">
+                                <div className="flex flex-col items-center py-3 rounded-2xl hover:bg-white/5 active:bg-white/10 transition-colors cursor-pointer">
+                                    <Settings size={22} className="text-white/70 mb-1.5" strokeWidth={2} />
+                                    <span className="text-[11px] font-bold text-white/60">Settings</span>
+                                </div>
+                            </Link>
+                        </div>
+                    </motion.div>
+                </nav>
+            </div>
         </AppShell>
     )
 }
