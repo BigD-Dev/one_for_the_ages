@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OFTA Admin Panel</title>
+    <meta name="description" content="One for the Ages - Admin Dashboard for managing celebrities, questions, and game analytics.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <span class="brand-icon">🎮</span>
+            <div>
+                <h1 class="brand-title">OFTA</h1>
+                <p class="brand-sub">Admin Panel</p>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-page="dashboard" id="nav-dashboard">
+                <span class="nav-icon">📊</span> Dashboard
+            </a>
+            <a href="#" class="nav-item" data-page="celebrities" id="nav-celebrities">
+                <span class="nav-icon">⭐</span> Celebrities
+            </a>
+            <a href="#" class="nav-item" data-page="questions" id="nav-questions">
+                <span class="nav-icon">❓</span> Questions
+            </a>
+            <a href="#" class="nav-item" data-page="users" id="nav-users">
+                <span class="nav-icon">👥</span> Users
+            </a>
+            <a href="#" class="nav-item" data-page="leaderboard" id="nav-leaderboard">
+                <span class="nav-icon">🏆</span> Leaderboard
+            </a>
+            <a href="#" class="nav-item" data-page="config" id="nav-config">
+                <span class="nav-icon">⚙️</span> Config
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <p class="footer-ver">v1.0.0</p>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main-content">
+        <!-- Top Bar -->
+        <header class="topbar">
+            <button class="menu-toggle" id="menu-toggle">☰</button>
+            <h2 class="page-title" id="page-title">Dashboard</h2>
+            <div class="topbar-right">
+                <span class="env-badge">LOCAL</span>
+                <span class="user-badge">Admin</span>
+            </div>
+        </header>
+
+        <!-- Page Container -->
+        <div class="page-container" id="page-container">
+            <!-- Dashboard page is loaded by default -->
+        </div>
+    </main>
+
+    <script src="admin.js"></script>
+</body>
+</html>

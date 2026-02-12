@@ -1,70 +1,144 @@
 'use client'
 
 import Link from 'next/link'
+import { AppShell } from '@/components/ui/Layout'
+import { Card } from '@/components/ui/Card'
+import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
+import { Trophy, Flame, Play, Star, Sparkles, Zap, Timer, ArrowRight, User, Settings, Crown } from 'lucide-react'
 
 export default function Home() {
     return (
-        <main className="flex min-h-screen flex-col items-center justify-center p-8 bg-gradient-to-b from-dark-950 to-dark-900">
-            <div className="text-center space-y-8 max-w-md">
-                {/* Logo / Title */}
-                <div className="space-y-2">
-                    <h1 className="text-5xl font-bold text-primary-400">
-                        One for the Ages
+        <AppShell>
+            {/* Top HUD */}
+            <header className="flex justify-between items-center mb-8 pt-2">
+                <div className="flex flex-col">
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-from to-primary-to bg-clip-text text-transparent">
+                        OFTA
                     </h1>
-                    <p className="text-xl text-gray-300">
-                        Celebrity Age Trivia
-                    </p>
+                    <span className="text-xs text-text-muted font-medium tracking-wider">ONE FOR THE AGES</span>
                 </div>
 
-                {/* Tagline */}
-                <p className="text-gray-400 text-lg">
-                    Guess ages, compete on leaderboards, master the ages!
-                </p>
+                <div className="flex gap-3">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-surface rounded-full border border-border-subtle">
+                        <Flame size={16} className="text-orange-500" fill="currentColor" />
+                        <span className="text-sm font-bold text-orange-100">3</span>
+                    </div>
+                </div>
+            </header>
 
-                {/* Game Mode Buttons */}
-                <div className="space-y-4 pt-8">
-                    <Link
-                        href="/game/age-guess"
-                        className="block w-full bg-primary-500 hover:bg-primary-600 text-white font-bold py-4 px-6 rounded-lg transition-colors"
-                    >
-                        🎯 Age Guess
-                    </Link>
-
-                    <Link
-                        href="/game/whos-older"
-                        className="block w-full bg-primary-500 hover:bg-primary-600 text-white font-bold py-4 px-6 rounded-lg transition-colors"
-                    >
-                        ⚖️ Who's Older?
-                    </Link>
-
-                    <Link
-                        href="/game/daily"
-                        className="block w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 px-6 rounded-lg transition-colors"
-                    >
-                        ⭐ Daily Challenge
-                    </Link>
-
-                    <Link
-                        href="/game/reverse"
-                        className="block w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 px-6 rounded-lg transition-colors"
-                    >
-                        🔮 Reverse Mode
-                    </Link>
+            {/* Daily Challenge (Hero) */}
+            <section className="mb-8">
+                <div className="flex justify-between items-end mb-3 px-1">
+                    <h2 className="text-sm font-bold text-text-secondary uppercase tracking-widest">Daily Ritual</h2>
+                    <span className="text-xs text-text-muted flex items-center gap-1">
+                        <Timer size={12} /> Resets in 04:22
+                    </span>
                 </div>
 
-                {/* Bottom Links */}
-                <div className="flex justify-center gap-6 pt-8 text-sm text-gray-500">
-                    <Link href="/leaderboard" className="hover:text-primary-400 transition-colors">
-                        Leaderboard
+                <Card
+                    variant="glass"
+                    className="p-1 relative overflow-hidden group border-yellow-500/30 bg-gradient-to-br from-yellow-500/10 to-transparent"
+                >
+                    <div className="absolute top-0 right-0 p-3 opacity-20">
+                        <Crown size={80} className="text-yellow-500 transform rotate-12 group-hover:scale-110 transition-transform" />
+                    </div>
+
+                    <div className="p-5 relative z-10">
+                        <div className="flex items-start justify-between mb-4">
+                            <Badge variant="warn" className="bg-yellow-500/20 text-yellow-200 border-yellow-500/30">
+                                LIMITED TIME
+                            </Badge>
+                        </div>
+
+                        <h3 className="text-2xl font-bold text-white mb-1">Daily Challenge</h3>
+                        <p className="text-yellow-200/70 text-sm mb-6 max-w-[80%]">
+                            10 questions. One attempt. Global glory.
+                        </p>
+
+                        <Button href="/game/daily" className="w-full bg-gradient-to-r from-yellow-600 to-yellow-700 hover:shadow-yellow-500/20 border border-white/10">
+                            <Play size={18} className="mr-2" /> Play Today's 10
+                        </Button>
+                    </div>
+                </Card>
+            </section>
+
+            {/* Game Modes */}
+            <section className="flex-1">
+                <h2 className="text-sm font-bold text-text-secondary uppercase tracking-widest mb-3 px-1">Game Modes</h2>
+
+                <div className="grid grid-cols-1 gap-3">
+                    {/* Age Guess */}
+                    <Link href="/game/age-guess">
+                        <Card variant="glass" className="p-4 flex items-center justify-between group hover:border-primary/50 transition-colors">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 transition-colors">
+                                    <Sparkles size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-text-primary text-lg">Age Guess</h3>
+                                    <p className="text-xs text-text-muted">The classic mode</p>
+                                </div>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-bg-surface-active flex items-center justify-center text-text-muted group-hover:text-primary transition-colors">
+                                <ArrowRight size={16} />
+                            </div>
+                        </Card>
                     </Link>
-                    <Link href="/profile" className="hover:text-primary-400 transition-colors">
-                        Profile
+
+                    {/* Who's Older */}
+                    <Link href="/game/whos-older">
+                        <Card variant="glass" className="p-4 flex items-center justify-between group hover:border-emerald-500/50 transition-colors">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20 transition-colors">
+                                    <Zap size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-text-primary text-lg">Who's Older?</h3>
+                                    <p className="text-xs text-text-muted">Speed comparison</p>
+                                </div>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-bg-surface-active flex items-center justify-center text-text-muted group-hover:text-emerald-400 transition-colors">
+                                <ArrowRight size={16} />
+                            </div>
+                        </Card>
                     </Link>
-                    <Link href="/settings" className="hover:text-primary-400 transition-colors">
-                        Settings
+
+                    {/* Reverse Mode */}
+                    <Link href="/game/reverse">
+                        <Card variant="glass" className="p-4 flex items-center justify-between group hover:border-purple-500/50 transition-colors">
+                            <div className="flex items-center gap-4">
+                                <div className="p-3 rounded-xl bg-purple-500/10 text-purple-400 group-hover:bg-purple-500/20 transition-colors">
+                                    <Star size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-text-primary text-lg">Astrology</h3>
+                                    <p className="text-xs text-text-muted">Guess the sign</p>
+                                </div>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-bg-surface-active flex items-center justify-center text-text-muted group-hover:text-purple-400 transition-colors">
+                                <ArrowRight size={16} />
+                            </div>
+                        </Card>
                     </Link>
                 </div>
-            </div>
-        </main>
+            </section>
+
+            {/* Bottom Nav */}
+            <nav className="mt-8 grid grid-cols-3 gap-2">
+                <Button variant="ghost" size="sm" href="/leaderboard" className="flex flex-col h-auto py-2 gap-1 text-xs">
+                    <Trophy size={20} />
+                    <span>Rankings</span>
+                </Button>
+                <Button variant="ghost" size="sm" href="/profile" className="flex flex-col h-auto py-2 gap-1 text-xs">
+                    <User size={20} />
+                    <span>Profile</span>
+                </Button>
+                <Button variant="ghost" size="sm" href="/settings" className="flex flex-col h-auto py-2 gap-1 text-xs">
+                    <Settings size={20} />
+                    <span>Config</span>
+                </Button>
+            </nav>
+        </AppShell>
     )
 }

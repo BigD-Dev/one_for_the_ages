@@ -96,18 +96,22 @@ async def secure_headers(request: Request, call_next):
 from ofta_core.api.auth import router as auth_router
 from ofta_core.api.config import router as config_router
 from ofta_core.api.sessions import router as sessions_router
-# from ofta_core.api.packs import router as packs_router
-# from ofta_core.api.leaderboards import router as leaderboards_router
-# from ofta_core.api.users import router as users_router
-# from ofta_core.api.telemetry import router as telemetry_router
+from ofta_core.api.packs import router as packs_router
+from ofta_core.api.leaderboards import router as leaderboards_router
+from ofta_core.api.users import router as users_router
+from ofta_core.api.telemetry import router as telemetry_router
+from ofta_core.api.admin import router as admin_router
 
 app.include_router(config_router, prefix="/v1", tags=["Config"])
 app.include_router(auth_router, prefix="/v1/auth", tags=["Auth"])
 app.include_router(sessions_router, prefix="/v1/sessions", tags=["Sessions"])
-# app.include_router(packs_router, prefix="/v1/packs", tags=["Packs"])
-# app.include_router(leaderboards_router, prefix="/v1/leaderboards", tags=["Leaderboards"])
-# app.include_router(users_router, prefix="/v1/users", tags=["Users"])
-# app.include_router(telemetry_router, prefix="/v1/telemetry", tags=["Telemetry"])
+app.include_router(packs_router, prefix="/v1/packs", tags=["Packs"])
+app.include_router(leaderboards_router, prefix="/v1/leaderboards", tags=["Leaderboards"])
+app.include_router(users_router, prefix="/v1/users", tags=["Users"])
+app.include_router(telemetry_router, prefix="/v1/telemetry", tags=["Telemetry"])
+app.include_router(admin_router, prefix="/admin", tags=["Admin"])
+
+
 
 
 # ───────────────────────────

@@ -1,14 +1,17 @@
 /** @type {import('next').NextConfig} */
+
+const isCloudRun = process.env.BUILD_MODE === 'standalone'
+
 const nextConfig = {
-    output: 'export',
-    distDir: 'out',
+    output: isCloudRun ? 'standalone' : 'export',
+    distDir: isCloudRun ? '.next' : 'out',
     images: {
         unoptimized: true,
     },
-    // Disable server-side features for static export
-    trailingSlash: true,
+    // Trailing slash handled differently
+    trailingSlash: !isCloudRun,
     // Capacitor compatibility
-    assetPrefix: process.env.NODE_ENV === 'production' ? '' : '',
+    assetPrefix: process.env.NODE_ENV === 'production' && !isCloudRun ? '' : '',
 }
 
 export default nextConfig

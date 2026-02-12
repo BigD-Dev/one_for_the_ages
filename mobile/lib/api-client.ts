@@ -145,6 +145,43 @@ class APIClient {
     }
 
     // ────────────────────────────────────────────────
+    // Leaderboard (extended)
+    // ────────────────────────────────────────────────
+
+    async getAllTimeLeaderboard(limit = 100) {
+        const { data } = await this.client.get('/v1/leaderboards/all-time', {
+            params: { limit },
+        })
+        return data
+    }
+
+    async submitDailyScore(date: string) {
+        const { data } = await this.client.post(`/v1/leaderboards/daily/${date}/submit`)
+        return data
+    }
+
+    // ────────────────────────────────────────────────
+    // Users / Stats
+    // ────────────────────────────────────────────────
+
+    async getUserAchievements() {
+        const { data } = await this.client.get('/v1/users/achievements')
+        return data
+    }
+
+    async getUserHistory(limit = 20) {
+        const { data } = await this.client.get('/v1/users/history', {
+            params: { limit },
+        })
+        return data
+    }
+
+    async deleteAccount() {
+        const { data } = await this.client.delete('/v1/auth/me')
+        return data
+    }
+
+    // ────────────────────────────────────────────────
     // Telemetry
     // ────────────────────────────────────────────────
 

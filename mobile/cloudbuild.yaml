@@ -1,0 +1,12 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: [
+      'build',
+      '--build-arg', 'BUILD_MODE=standalone',
+      '-t', '$_IMAGE_URI',
+      '.'
+    ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '$_IMAGE_URI']
+substitutions:
+  _IMAGE_URI: 'gcr.io/my-project/my-image'
