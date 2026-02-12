@@ -11,12 +11,14 @@ export default function Home() {
     return (
         <AppShell>
             {/* Top HUD */}
-            <header className="flex justify-between items-center mb-8 pt-2">
+            <header className="flex justify-between items-center mb-10 pt-2 px-1">
                 <div className="flex flex-col">
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-primary-from to-primary-to bg-clip-text text-transparent">
+                    <h1 className="text-3xl font-extrabold tracking-tighter bg-gradient-to-r from-primary-from to-primary-to bg-clip-text text-transparent">
                         OFTA
                     </h1>
-                    <span className="text-xs text-text-muted font-medium tracking-wider">ONE FOR THE AGES</span>
+                    <span className="text-[10px] text-text-muted font-bold tracking-[0.2em] uppercase opacity-70">
+                        One for the Ages
+                    </span>
                 </div>
 
                 <div className="flex gap-3">
