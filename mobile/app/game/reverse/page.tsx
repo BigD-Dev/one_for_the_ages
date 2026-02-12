@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation'
 import { useGameStore } from '@/store/useGameStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
+import { GameLayout } from '@/components/game/GameLayout'
+import { ZodiacGrid } from '@/components/game/ZodiacGrid'
+import { EnhancedCelebrityImage } from '@/components/ui/EnhancedCelebrityImage'
+import { Card } from '@/components/ui/Card'
+import { ImagePlaceholder } from '@/components/ui/ImagePlaceholder'
 
 export default function ReverseModePage() {
     const router = useRouter()
@@ -28,21 +33,6 @@ export default function ReverseModePage() {
 
     const currentQuestion = questions[currentQuestionIndex]
     const isLastQuestion = currentQuestionIndex === questions.length - 1
-
-    const starSigns = [
-        { name: 'Aries', emoji: '♈', dates: 'Mar 21 - Apr 19' },
-        { name: 'Taurus', emoji: '♉', dates: 'Apr 20 - May 20' },
-        { name: 'Gemini', emoji: '♊', dates: 'May 21 - Jun 20' },
-        { name: 'Cancer', emoji: '♋', dates: 'Jun 21 - Jul 22' },
-        { name: 'Leo', emoji: '♌', dates: 'Jul 23 - Aug 22' },
-        { name: 'Virgo', emoji: '♍', dates: 'Aug 23 - Sep 22' },
-        { name: 'Libra', emoji: '♎', dates: 'Sep 23 - Oct 22' },
-        { name: 'Scorpio', emoji: '♏', dates: 'Oct 23 - Nov 21' },
-        { name: 'Sagittarius', emoji: '♐', dates: 'Nov 22 - Dec 21' },
-        { name: 'Capricorn', emoji: '♑', dates: 'Dec 22 - Jan 19' },
-        { name: 'Aquarius', emoji: '♒', dates: 'Jan 20 - Feb 18' },
-        { name: 'Pisces', emoji: '♓', dates: 'Feb 19 - Mar 20' },
-    ]
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -120,102 +110,113 @@ export default function ReverseModePage() {
 
     if (isLoading || !currentQuestion) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-dark-950">
+            <div className="flex items-center justify-center min-h-screen bg-bg-primary">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-                    <p className="text-gray-400">Loading Reverse Mode...</p>
+                    <ImagePlaceholder
+                        width={48}
+                        height={48}
+                        variant="pulse"
+                        className="mx-auto mb-lg rounded-full"
+                    >
+                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    </ImagePlaceholder>
+                    <p className="text-text-secondary">Loading Reverse Mode...</p>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-dark-950 to-purple-950/30 p-6">
-            {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <p className="text-purple-400 text-sm font-bold">🔮 REVERSE MODE</p>
-                    <p className="text-xs text-gray-400">Q {currentQuestionIndex + 1}/{questions.length}</p>
-                </div>
-                <div className="flex gap-6">
-                    <div>
-                        <p className="text-2xl font-bold text-purple-400">{score}</p>
-                    </div>
-                    <div>
-                        <p className="text-2xl font-bold text-orange-400">{streak} 🔥</p>
-                    </div>
-                </div>
-            </div>
+        <GameLayout
+            gameMode={{
+                name: 'Reverse Mode',
+                icon: '🔮',
+                theme: 'mystic'
+            }}
+            score={score}
+            streak={streak}
+            currentQuestion={currentQuestionIndex + 1}
+            totalQuestions={questions.length}
+        >
+            {/* Celebrity Card with Enhanced Image */}
+            <Card variant="hero" className="mb-xl">
+                <div className="p-xl text-center">
+                    <h2 className="text-headline font-bold text-text-primary mb-md">
+                        What's their star sign?
+                    </h2>
 
-            {/* Question */}
-            <div className="bg-dark-800 rounded-2xl p-6 mb-6 shadow-xl border border-purple-500/20">
-                <h2 className="text-2xl font-bold text-white mb-2 text-center">
-                    What's their star sign?
-                </h2>
-                <p className="text-3xl font-bold text-purple-400 text-center mb-4">
-                    {currentQuestion.celebrity_name}
-                </p>
-
-                {/* Hints */}
-                {showHint && currentQuestion.hints?.length > 0 && (
-                    <div className="bg-dark-700 rounded-lg p-3 mb-4">
-                        <p className="text-sm text-gray-400">💡 {currentQuestion.hints[0]}</p>
-                    </div>
-                )}
-
-                {!showHint && currentQuestion.hints?.length > 0 && (
-                    <button
-                        onClick={() => setShowHint(true)}
-                        className="w-full bg-dark-700 hover:bg-dark-600 text-gray-300 py-2 px-4 rounded-lg mb-4 text-sm transition-colors"
+                    <EnhancedCelebrityImage
+                        name={currentQuestion.celebrity_name}
+                        size="hero"
+                        className="mx-auto mb-lg"
                     >
-                        💡 Show Hint
-                    </button>
-                )}
-            </div>
+                        {/* Celebrity name overlay */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-lg">
+                            <h3 className="text-title font-bold text-white text-shadow-sm">
+                                {currentQuestion.celebrity_name}
+                            </h3>
+                        </div>
+                    </EnhancedCelebrityImage>
 
-            {/* Star Signs Grid */}
-            <div className="grid grid-cols-3 gap-3 mb-6">
-                {starSigns.map((sign) => {
-                    let btnClass = 'bg-dark-800 hover:bg-dark-700 border-dark-600'
+                    {/* Hints Section */}
+                    {showHint && currentQuestion.hints?.length > 0 && (
+                        <Card variant="elevated" className="mb-lg">
+                            <div className="p-lg">
+                                <div className="flex items-center gap-xs mb-sm">
+                                    <span className="text-lg">💡</span>
+                                    <span className="text-caption text-primary font-bold uppercase tracking-wide">
+                                        Hint
+                                    </span>
+                                </div>
+                                <p className="text-body text-text-secondary">
+                                    {currentQuestion.hints[0]}
+                                </p>
+                            </div>
+                        </Card>
+                    )}
 
-                    if (feedback && selectedSign === sign.name) {
-                        btnClass = feedback.includes('Correct')
-                            ? 'bg-green-900/50 border-green-500'
-                            : 'bg-red-900/50 border-red-500'
-                    }
-
-                    return (
-                        <button
-                            key={sign.name}
-                            onClick={() => handleSelect(sign.name)}
-                            disabled={!!feedback}
-                            className={`${btnClass} border rounded-xl p-3 text-center transition-all disabled:opacity-70`}
+                    {!showHint && currentQuestion.hints?.length > 0 && (
+                        <Card
+                            variant="interactive"
+                            onClick={() => setShowHint(true)}
+                            className="mb-lg cursor-pointer"
                         >
-                            <p className="text-2xl mb-1">{sign.emoji}</p>
-                            <p className="text-white text-xs font-bold">{sign.name}</p>
-                            <p className="text-gray-500 text-[10px]">{sign.dates}</p>
-                        </button>
-                    )
-                })}
-            </div>
+                            <div className="p-lg text-center">
+                                <span className="text-body text-text-secondary">
+                                    💡 Show Hint
+                                </span>
+                            </div>
+                        </Card>
+                    )}
+                </div>
+            </Card>
+
+            {/* Zodiac Grid */}
+            <ZodiacGrid
+                onSelect={handleSelect}
+                selectedSign={selectedSign}
+                disabled={!!feedback}
+                feedback={feedback}
+                variant="default"
+                showElements
+                className="mb-xl"
+            />
 
             {/* Feedback */}
             {feedback && (
-                <div className={`p-4 rounded-lg mb-4 ${feedback.includes('Correct')
-                        ? 'bg-green-900/30 border border-green-500'
-                        : 'bg-red-900/30 border border-red-500'
-                    }`}>
-                    <p className="text-white text-center">{feedback}</p>
-                </div>
+                <Card
+                    variant="elevated"
+                    className={`mb-xl ${
+                        feedback.includes('Correct')
+                            ? 'border-green-500 bg-green-500/10'
+                            : 'border-red-500 bg-red-500/10'
+                    }`}
+                >
+                    <div className="p-lg text-center">
+                        <p className="text-body text-text-primary">{feedback}</p>
+                    </div>
+                </Card>
             )}
-
-            {/* Progress */}
-            <div className="w-full bg-dark-700 rounded-full h-2">
-                <div
-                    className="bg-purple-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
-                ></div>
-            </div>
-        </div>
+        </GameLayout>
     )
 }

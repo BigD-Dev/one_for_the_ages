@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'icon' | 'ghost'
+    variant?: 'primary' | 'secondary' | 'outline' | 'icon' | 'ghost'
     size?: 'sm' | 'md' | 'lg'
     href?: string
 }
@@ -12,6 +12,7 @@ export const Button = ({ children, variant = 'primary', size = 'md', className =
     const variants = {
         primary: "bg-gradient-to-r from-primary-from to-primary-to text-white rounded-xl shadow-lg shadow-primary/20 hover:shadow-primary/40",
         secondary: "bg-bg-surface-active text-text-secondary border border-border-subtle hover:text-text-primary rounded-xl",
+        outline: "bg-transparent text-text-secondary border border-border-subtle hover:text-text-primary hover:border-primary/50 rounded-xl",
         icon: "bg-transparent text-text-secondary hover:text-text-primary p-2 rounded-full hover:bg-bg-surface-active",
         ghost: "bg-transparent text-text-muted hover:text-text-primary"
     }

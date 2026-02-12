@@ -8,6 +8,25 @@
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-medium: 250ms cubic-bezier(0.4, 0, 0.2, 1);
 
+  /* Typography Scale */
+  --text-display: 2.5rem;     /* 40px - Game titles */
+  --text-headline: 1.875rem;  /* 30px - Section headers */
+  --text-title: 1.5rem;       /* 24px - Card titles */
+  --text-body-large: 1.125rem; /* 18px - Important text */
+  --text-body: 1rem;          /* 16px - Regular text */
+  --text-caption: 0.875rem;   /* 14px - Meta info */
+  --text-overline: 0.75rem;   /* 12px - Labels */
+
+  /* Spacing Scale */
+  --space-2xs: 0.25rem;  /* 4px */
+  --space-xs: 0.5rem;    /* 8px */
+  --space-sm: 0.75rem;   /* 12px */
+  --space-md: 1rem;      /* 16px */
+  --space-lg: 1.5rem;    /* 24px */
+  --space-xl: 2rem;      /* 32px */
+  --space-2xl: 2.5rem;   /* 40px */
+  --space-3xl: 3rem;     /* 48px */
+
   /* ========================================= */
   /* PREMIUM DARK (Default)                    */
   /* ========================================= */
@@ -119,5 +138,70 @@ body {
     0% { left: -100%; }
     50% { left: 0%; }
     100% { left: 100%; }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeInScale {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes bounce {
+    0%, 20%, 53%, 80%, 100% {
+      transform: translate3d(0, 0, 0);
+    }
+    40%, 43% {
+      transform: translate3d(0, -8px, 0);
+    }
+    70% {
+      transform: translate3d(0, -4px, 0);
+    }
+    90% {
+      transform: translate3d(0, -2px, 0);
+    }
+  }
+
+  @keyframes glow {
+    0% {
+      box-shadow: 0 0 5px currentColor;
+    }
+    50% {
+      box-shadow: 0 0 20px currentColor, 0 0 30px currentColor;
+    }
+    100% {
+      box-shadow: 0 0 5px currentColor;
+    }
   }
 }

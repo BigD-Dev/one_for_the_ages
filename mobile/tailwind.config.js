@@ -35,6 +35,25 @@ module.exports = {
             fontFamily: {
                 sans: ['var(--font-sans)', 'sans-serif'],
             },
+            fontSize: {
+                'display': 'var(--text-display)',
+                'headline': 'var(--text-headline)',
+                'title': 'var(--text-title)',
+                'body-large': 'var(--text-body-large)',
+                'body': 'var(--text-body)',
+                'caption': 'var(--text-caption)',
+                'overline': 'var(--text-overline)',
+            },
+            spacing: {
+                '2xs': 'var(--space-2xs)',
+                'xs': 'var(--space-xs)',
+                'sm': 'var(--space-sm)',
+                'md': 'var(--space-md)',
+                'lg': 'var(--space-lg)',
+                'xl': 'var(--space-xl)',
+                '2xl': 'var(--space-2xl)',
+                '3xl': 'var(--space-3xl)',
+            },
             keyframes: {
                 'fade-in-up': {
                     '0%': { opacity: '0', transform: 'translateY(12px)' },
@@ -42,7 +61,13 @@ module.exports = {
                 },
             },
             animation: {
-                'fade-in-up': 'fade-in-up 250ms ease-out forwards',
+                'fade-in-up': 'fadeInUp 300ms cubic-bezier(0, 0, 0.2, 1) forwards',
+                'fade-in-scale': 'fadeInScale 300ms cubic-bezier(0, 0, 0.2, 1) forwards',
+                'slide-in-right': 'slideInRight 400ms cubic-bezier(0.4, 0, 0.2, 1) forwards',
+                'bounce-gentle': 'bounce 500ms cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards',
+                'pulse-glow': 'glow 1000ms cubic-bezier(0.4, 0, 0.2, 1) infinite',
+                'shimmer': 'shimmer 2000ms linear infinite',
+                'pulse-soft': 'pulse 1000ms cubic-bezier(0.4, 0, 0.2, 1) infinite',
             },
         },
     },
