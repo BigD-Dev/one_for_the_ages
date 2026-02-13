@@ -82,7 +82,7 @@ sleep 3
 # Start mobile in background
 echo -e "${GREEN}📱 Starting Mobile App (port 3100)...${NC}"
 cd "$MOBILE_DIR"
-npm run dev > /tmp/ofta_mobile.log 2>&1 &
+npm run dev:clean > /tmp/ofta_mobile.log 2>&1 &
 MOBILE_PID=$!
 echo "Mobile PID: $MOBILE_PID"
 cd "$SCRIPT_DIR"
