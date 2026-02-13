@@ -4,16 +4,18 @@ import { useState } from 'react'
 
 interface CelebrityImageProps {
     name: string
-    size?: 'sm' | 'md' | 'lg' | 'xl'
+    size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
+    rounded?: 'full' | 'sharp'
     className?: string
-    imageUrl?: string | null // For future when backend provides images
+    imageUrl?: string | null
 }
 
 const sizeClasses = {
     sm: 'w-12 h-12 text-sm',
     md: 'w-16 h-16 text-lg',
     lg: 'w-24 h-24 text-2xl',
-    xl: 'w-32 h-32 text-4xl'
+    xl: 'w-full aspect-square text-6xl',
+    full: 'w-full h-full text-6xl'
 }
 
 // Generate consistent color based on name
@@ -50,6 +52,7 @@ const getInitials = (name: string): string => {
 export const CelebrityImage = ({
     name,
     size = 'lg',
+    rounded = 'full',
     className = '',
     imageUrl
 }: CelebrityImageProps) => {
@@ -58,11 +61,12 @@ export const CelebrityImage = ({
 
     const initials = getInitials(name)
     const gradientClass = getColorFromName(name)
+    const borderRadius = rounded === 'full' ? 'rounded-full' : 'rounded-sharp'
 
     // If image URL provided and loaded successfully
     if (imageUrl && imageLoaded && !imageError) {
         return (
-            <div className={`${sizeClasses[size]} rounded-full overflow-hidden border-2 border-border-subtle ${className}`}>
+            <div className={`${sizeClasses[size]} ${borderRadius} overflow-hidden border-2 border-border-subtle ${className}`}>
                 <img
                     src={imageUrl}
                     alt={name}
@@ -77,7 +81,7 @@ export const CelebrityImage = ({
     // Default to generated avatar
     return (
         <div
-            className={`${sizeClasses[size]} rounded-full bg-gradient-to-br ${gradientClass} flex items-center justify-center font-bold text-white shadow-lg border border-border-subtle ${className}`}
+            className={`${sizeClasses[size]} ${borderRadius} bg-gradient-to-br ${gradientClass} flex items-center justify-center font-bold text-white shadow-lg border border-border-subtle ${className}`}
             style={{
                 textShadow: '0 1px 2px rgba(0,0,0,0.5)'
             }}
