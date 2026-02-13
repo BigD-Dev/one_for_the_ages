@@ -35,18 +35,25 @@ export default function Welcome() {
                 {/* GET STARTED Button */}
                 <Link
                     href="/"
-                    className="block w-full bg-primary text-white font-sans font-medium text-sm tracking-wide py-4 rounded-sharp hover:bg-primary/90 transition-colors uppercase"
+                    className="block w-full bg-primary text-white font-sans text-sm tracking-wide py-4 rounded-sharp hover:bg-primary/90 transition-colors uppercase"
                 >
                     Get Started
                 </Link>
 
                 {/* Log In Link */}
-                <div>
+                <div className="flex flex-col gap-4">
                     <Link
                         href="/login"
                         className="font-sans text-sm text-text-primary underline decoration-gold/50 underline-offset-4 hover:text-gold transition-colors"
                     >
                         Log In
+                    </Link>
+
+                    <Link
+                        href="/"
+                        className="font-sans text-xs text-text-muted hover:text-text-primary transition-colors tracking-widest uppercase opacity-80"
+                    >
+                        Continue as Guest
                     </Link>
                 </div>
 

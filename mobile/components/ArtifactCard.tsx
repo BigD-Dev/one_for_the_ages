@@ -9,7 +9,7 @@ interface ArtifactCardProps {
     subtitle?: string
     icon?: React.ReactNode
     variant?: 'hero' | 'standard' | 'wide'
-    href: string
+    href?: string
     className?: string
 }
 
@@ -32,25 +32,16 @@ export const ArtifactCard = ({
 
     // Visuals: "Surface background, very subtle gold border (opacity 20%)."
     const baseClasses = `
-    relative overflow-hidden bg-surface border border-gold/20 rounded-sharp p-6 
-    flex flex-col justify-between group
-    ${variant === 'hero' ? 'aspect-[4/3]' : ''}
+    relative overflow-hidden bg-surface-raised border border-gold/10 rounded-sharp p-6 
+    flex flex-col justify-between group transition-all duration-300
+    ${variant === 'hero' ? 'aspect-[4/3] border-gold/30' : ''}
     ${variant === 'standard' ? 'aspect-square' : ''}
     ${variant === 'wide' ? 'aspect-[3/1]' : ''}
     ${className}
   `
 
-    return (
-        <Link
-            href={href}
-            className={baseClasses}
-            style={interactionStyle}
-            onMouseDown={() => setIsPressed(true)}
-            onMouseUp={() => setIsPressed(false)}
-            onMouseLeave={() => setIsPressed(false)}
-            onTouchStart={() => setIsPressed(true)}
-            onTouchEnd={() => setIsPressed(false)}
-        >
+    const content = (
+        <>
             <div className="flex justify-between items-start">
                 {/* Icon or Year Badge */}
                 {year && (
@@ -78,6 +69,29 @@ export const ArtifactCard = ({
                     </p>
                 )}
             </div>
+        </>
+    )
+
+    if (!href) {
+        return (
+            <div className={baseClasses} style={interactionStyle}>
+                {content}
+            </div>
+        )
+    }
+
+    return (
+        <Link
+            href={href}
+            className={baseClasses}
+            style={interactionStyle}
+            onMouseDown={() => setIsPressed(true)}
+            onMouseUp={() => setIsPressed(false)}
+            onMouseLeave={() => setIsPressed(false)}
+            onTouchStart={() => setIsPressed(true)}
+            onTouchEnd={() => setIsPressed(false)}
+        >
+            {content}
         </Link>
     )
 }

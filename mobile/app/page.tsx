@@ -1,86 +1,155 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { AppShell } from '@/components/ui/Layout'
 import { ArtifactCard } from '@/components/ArtifactCard'
-import { Sun, Hourglass, Scale, Star, Menu, User } from 'lucide-react'
+import { BottomNav } from '@/components/ui/BottomNav'
+import { Hourglass, Scale, Star, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 
 export default function Home() {
-    return (
-        <AppShell className="bg-canvas">
-            <div className="flex flex-col h-full relative space-y-8">
+    const [currentTime, setCurrentTime] = useState(new Date())
+    const [timeLeft, setTimeLeft] = useState('')
 
-                {/* Header: Personal Greeting */}
-                <header className="flex justify-between items-end pb-2 border-b border-border-subtle">
-                    <div>
-                        <p className="font-sans text-xs text-gold uppercase tracking-[0.2em] mb-1 opacity-80">
-                            The Archive
-                        </p>
-                        <h1 className="font-serif text-3xl text-text-primary">
-                            Good Evening.
-                        </h1>
+    // 1. Time-based greeting logic
+    const getGreeting = () => {
+        const hour = currentTime.getHours()
+        if (hour < 12) return 'Good Morning'
+        if (hour < 18) return 'Good Afternoon'
+        return 'Good Evening'
+    }
+
+    // 2. Countdown logic for "Resets in..."
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date())
+
+            const now = new Date()
+            const tomorrow = new Date(now)
+            tomorrow.setDate(tomorrow.getDate() + 1)
+            tomorrow.setHours(0, 0, 0, 0)
+
+            const diff = tomorrow.getTime() - now.getTime()
+            const hours = Math.floor(diff / (1000 * 60 * 60))
+            const minutes = Math.floor((diff / (1000 * 60)) % 60)
+            const seconds = Math.floor((diff / 1000) % 60)
+
+            setTimeLeft(
+                `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+            )
+        }, 1000)
+
+        return () => clearInterval(timer)
+    }, [])
+
+    // Mock User Data
+    const user = {
+        name: 'Diran',
+        level: 12,
+        streak: 7,
+        accuracy: 71,
+        bestScore: 820,
+        rank: '#1,245'
+    }
+
+    return (
+        <AppShell className="bg-canvas pb-24">
+            <div className="flex flex-col space-y-8 px-6 pt-8">
+
+                {/* 1️⃣ Header Section: Identity + Streak */}
+                <header className="space-y-1">
+                    <h1 className="font-serif text-2xl text-text-primary tracking-tight">
+                        {getGreeting()}, {user.name}
+                    </h1>
+                    <div className="flex items-center gap-2 font-sans text-xs tracking-widest uppercase">
+                        <span className="text-text-muted">Level {user.level}</span>
+                        <span className="text-border-subtle">•</span>
+                        <div className="flex items-center gap-1.5 text-gold">
+                            <span>{user.streak} Day Streak</span>
+                            <span className="animate-flame drop-shadow-[0_0_8px_rgba(201,162,39,0.5)]">🔥</span>
+                        </div>
                     </div>
-                    <button className="p-2 opacity-60 active:opacity-80 transition-opacity duration-150">
-                        <User size={20} className="text-text-primary" />
-                    </button>
                 </header>
 
-                {/* Bento Grid Layout */}
-                <main className="grid grid-cols-2 gap-4">
-                    {/* Hero: Daily Ritual */}
-                    <div className="col-span-2">
+                {/* 2️⃣ Daily Challenge (Hero Card) */}
+                <section>
+                    <div className="relative group">
                         <ArtifactCard
-                            href="/game/daily"
                             variant="hero"
-                            title="Daily Ritual"
-                            subtitle="Play today's curation."
-                            year="XXXX"
-                            icon={<Sun size={24} />}
+                            title="Daily Challenge"
+                            subtitle="10 Questions • One Attempt"
+                            className="bg-gradient-to-br from-surface-raised to-canvas border-gold/30 hover:border-gold/50"
                         />
+                        {/* Custom content inside Hero Area */}
+                        <div className="absolute bottom-6 left-6 right-6 flex flex-col items-start gap-4 pointer-events-none">
+                            <div className="font-sans text-[10px] text-gold tracking-[0.2em] uppercase opacity-70">
+                                Resets in {timeLeft}
+                            </div>
+                            <Link href="/game/daily" className="pointer-events-auto w-full">
+                                <button className="w-full bg-primary text-white font-sans text-xs tracking-widest uppercase py-4 rounded-sharp flex items-center justify-center gap-2 active:bg-primary/80 transition-all shadow-lg shadow-black/40">
+                                    Play Today’s Challenge
+                                    <ArrowRight size={14} />
+                                </button>
+                            </Link>
+                        </div>
                     </div>
+                </section>
 
-                    {/* Standard: Age Guess */}
-                    <div className="col-span-1">
+                {/* 3️⃣ Game Modes Section */}
+                <section className="space-y-4">
+                    <h2 className="font-sans text-[10px] text-text-muted tracking-[0.3em] uppercase pl-1">
+                        Game Modes
+                    </h2>
+                    <div className="flex flex-col gap-3">
                         <ArtifactCard
                             href="/game/age-guess"
-                            variant="standard"
+                            variant="wide"
                             title="Age Guess"
                             subtitle="Precision Mode"
-                            icon={<Hourglass size={20} />}
+                            icon={<Hourglass size={18} />}
+                            className="h-24 aspect-auto"
                         />
-                    </div>
-
-                    {/* Standard: Who's Older */}
-                    <div className="col-span-1">
                         <ArtifactCard
                             href="/game/whos-older"
-                            variant="standard"
-                            title="Who's Older"
+                            variant="wide"
+                            title="Who’s Older?"
                             subtitle="Versus Mode"
-                            icon={<Scale size={20} />}
+                            icon={<Scale size={18} />}
+                            className="h-24 aspect-auto"
                         />
-                    </div>
-
-                    {/* Wide: Reverse / Zodiac */}
-                    <div className="col-span-2">
                         <ArtifactCard
                             href="/game/reverse"
                             variant="wide"
                             title="Reverse / Zodiac"
                             subtitle="Astrological Timeline"
-                            icon={<Star size={20} />}
+                            icon={<Star size={18} />}
+                            className="h-24 aspect-auto"
                         />
                     </div>
-                </main>
+                </section>
 
-                {/* Floating Menu Pill */}
-                <div className="fixed bottom-8 left-0 right-0 flex justify-center pointer-events-none z-50">
-                    <button className="pointer-events-auto bg-surface border border-border-subtle text-text-primary px-6 py-3 rounded-full flex items-center gap-3 active:opacity-80 transition-opacity duration-150">
-                        <span className="font-sans text-xs font-medium tracking-widest text-gold">MENU</span>
-                        <Menu size={16} className="text-text-muted" />
-                    </button>
-                </div>
+                {/* 4️⃣ Quick Stats Preview */}
+                <section className="border-t border-border-subtle pt-6 flex justify-between items-center text-center">
+                    <div className="space-y-1">
+                        <p className="font-sans text-[10px] text-text-muted uppercase tracking-widest">Accuracy</p>
+                        <p className="font-serif text-lg text-text-primary">{user.accuracy}%</p>
+                    </div>
+                    <div className="w-[1px] h-8 bg-border-subtle" />
+                    <div className="space-y-1">
+                        <p className="font-sans text-[10px] text-text-muted uppercase tracking-widest">Best Score</p>
+                        <p className="font-serif text-lg text-text-primary">{user.bestScore}</p>
+                    </div>
+                    <div className="w-[1px] h-8 bg-border-subtle" />
+                    <div className="space-y-1">
+                        <p className="font-sans text-[10px] text-text-muted uppercase tracking-widest">Rank</p>
+                        <p className="font-serif text-lg text-gold">{user.rank}</p>
+                    </div>
+                </section>
 
             </div>
+
+            {/* 5️⃣ Bottom Navigation */}
+            <BottomNav />
         </AppShell>
     )
 }

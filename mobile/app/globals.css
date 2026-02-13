@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Inter:wght@300;400;500;600&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,6 +6,7 @@
   /* "Museum" Design System Tokens */
   --color-canvas: #121212;
   --color-surface: #1E1E1E;
+  --color-surface-raised: #1A1F22;
   --color-primary: #1E7A8C;
   --color-gold: #C9A227;
   --color-text-primary: #F2F2F2;
@@ -15,22 +14,29 @@
   --color-border-subtle: #2A2A2A;
 }
 
+@keyframes flame {
+
+  0%,
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: scale(1.1) translateY(-2px);
+    opacity: 1;
+  }
+}
+
+.animate-flame {
+  animation: flame 2s ease-in-out infinite;
+}
+
 body {
   background-color: var(--color-canvas);
   color: var(--color-text-primary);
-  font-family: 'Inter', sans-serif;
-  /* Default to Sans */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* Typography Utilities */
-.font-serif {
-  font-family: 'Fraunces', serif;
-}
-
-.font-sans {
-  font-family: 'Inter', sans-serif;
 }
 
 /* Skeleton loader */

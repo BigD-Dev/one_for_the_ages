@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Fraunces, Inter } from 'next/font/google'
+import { Fraunces, Inter, Montserrat } from 'next/font/google'
 import './globals.css'
 
 const fraunces = Fraunces({
@@ -11,6 +11,13 @@ const fraunces = Fraunces({
 const inter = Inter({
     subsets: ['latin'],
     variable: '--font-sans',
+    display: 'swap',
+})
+
+const montserrat = Montserrat({
+    subsets: ['latin'],
+    weight: ['700'],
+    variable: '--font-montserrat',
     display: 'swap',
 })
 
@@ -34,8 +41,8 @@ export default function RootLayout({
     children: React.ReactNode
 }) {
     return (
-        <html lang="en" className={`${fraunces.variable} ${inter.variable}`}>
-            <body className="bg-canvas text-text-primary font-sans antialiased">{children}</body>
+        <html lang="en" className={`${fraunces.variable} ${inter.variable} ${montserrat.variable}`}>
+            <body className="bg-canvas text-text-primary font-montserrat font-bold antialiased">{children}</body>
         </html>
     )
 }

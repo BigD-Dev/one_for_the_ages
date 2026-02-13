@@ -10,6 +10,7 @@ module.exports = {
             colors: {
                 canvas: '#121212',
                 surface: '#1E1E1E',
+                'surface-raised': '#1A1F22', // Slightly raised panel
                 primary: '#1E7A8C',
                 gold: '#C9A227',
                 'text-primary': '#F2F2F2', // Off-white
@@ -18,7 +19,8 @@ module.exports = {
             },
             fontFamily: {
                 serif: ['var(--font-serif)', 'Fraunces', 'serif'],
-                sans: ['var(--font-sans)', 'Inter', 'sans-serif'],
+                sans: ['var(--font-montserrat)', 'Montserrat', 'sans-serif'],
+                montserrat: ['var(--font-montserrat)', 'Montserrat', 'sans-serif'],
             },
             borderWidth: {
                 hairline: '1px',
