@@ -9,7 +9,7 @@ interface AppShellProps {
 
 export const AppShell = ({ children, className = '' }: AppShellProps) => {
     return (
-        <main className={`min-h-screen max-w-md mx-auto ${className}`}>
+        <main className={`min-h-screen w-full max-w-md mx-auto ${className}`}>
             {children}
         </main>
     )

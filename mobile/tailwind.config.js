@@ -11,7 +11,8 @@ module.exports = {
                 canvas: '#121212',
                 surface: '#1E1E1E',
                 'surface-raised': '#1A1F22', // Slightly raised panel
-                primary: '#1E7A8C',
+                primary: '#1E7A8C', // Teal
+                secondary: '#7B2CBF', // Muted Violet
                 gold: '#C9A227',
                 'text-primary': '#F2F2F2', // Off-white
                 'text-muted': '#94A3B8',   // Cool Grey

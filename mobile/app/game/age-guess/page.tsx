@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation'
 import { AppShell } from '@/components/ui/Layout'
 import { CelebrityImage } from '@/components/ui/CelebrityImage'
 import { GameLoadingSkeleton } from '@/components/ui/SkeletonLoader'
+import { GamePauseModal } from '@/components/game/GamePauseModal'
+import { HintModal } from '@/components/game/HintModal'
+import { FeedbackOverlay } from '@/components/game/FeedbackOverlay'
 import { useGameStore } from '@/store/useGameStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
@@ -21,16 +24,19 @@ export default function AgeGuessPage() {
         currentQuestionIndex,
         score,
         streak,
+        isPaused,
         startGame,
         nextQuestion,
         submitAnswer,
         endGame,
+        pauseGame,
+        useHint,
     } = useGameStore()
 
     const [guess, setGuess] = useState('')
     const [isLoading, setIsLoading] = useState(true)
-    const [isPaused, setIsPaused] = useState(false)
     const [showHint, setShowHint] = useState(false)
+    const [hasUsedHint, setHasUsedHint] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [feedback, setFeedback] = useState<{
         type: 'spot-on' | 'close' | 'wrong' | null
@@ -82,7 +88,7 @@ export default function AgeGuessPage() {
                 question_index: currentQuestionIndex,
                 user_answer: { age: userGuess },
                 response_time_ms: responseTimeMs,
-                hints_used: showHint ? 1 : 0,
+                hints_used: hasUsedHint ? 1 : 0,
             })
 
             const correctAge = result.correct_answer.age
@@ -108,11 +114,6 @@ export default function AgeGuessPage() {
 
             submitAnswer(result.is_correct, result.score_awarded)
 
-            // Auto-advance after 1.5s if perfect, or show "Next" button
-            if (type === 'spot-on') {
-                setTimeout(() => handleNext(), 1500)
-            }
-
         } catch (error) {
             console.error('Failed to submit:', error)
         } finally {
@@ -127,6 +128,7 @@ export default function AgeGuessPage() {
             setFeedback({ type: null, correctAge: null, scoreAwarded: 0, diff: 0 })
             setGuess('')
             setShowHint(false)
+            setHasUsedHint(false)
             nextQuestion()
         }
     }
@@ -134,8 +136,8 @@ export default function AgeGuessPage() {
     const handleEndGame = async () => {
         try {
             setIsLoading(true)
-            await apiClient.endSession(sessionId!)
-            endGame()
+            const result = await apiClient.endSession(sessionId!)
+            endGame(result)
             router.push('/game/results')
         } catch (error) {
             console.error('Failed to end:', error)
@@ -249,14 +251,17 @@ export default function AgeGuessPage() {
             <footer className="flex justify-between items-center px-2 pb-4">
                 <button
                     onClick={() => setShowHint(true)}
-                    className="flex items-center gap-2 text-text-muted/40 hover:text-text-muted transition-colors"
+                    disabled={hasUsedHint}
+                    className="flex items-center gap-2 text-text-muted/40 hover:text-text-muted transition-colors disabled:opacity-30 disabled:hover:text-text-muted/40"
                 >
                     <Info size={14} />
-                    <span className="font-montserrat font-bold text-[10px] tracking-[0.2em] uppercase">Hint (-20%)</span>
+                    <span className="font-montserrat font-bold text-[10px] tracking-[0.2em] uppercase">
+                        {hasUsedHint ? 'Hint Used' : 'Hint (-20%)'}
+                    </span>
                 </button>
 
                 <button
-                    onClick={() => setIsPaused(true)}
+                    onClick={() => pauseGame()}
                     className="flex items-center gap-2 text-text-muted/40 hover:text-text-muted transition-colors"
                 >
                     <Pause size={14} />
@@ -268,80 +273,30 @@ export default function AgeGuessPage() {
 
             {/* Immediate Response Overlay */}
             {feedback.type && (
-                <div className="fixed inset-0 z-40 bg-canvas/80 backdrop-blur-sm flex items-center justify-center animate-fade-in">
-                    <div className="text-center space-y-4 animate-scale-in">
-                        {feedback.type === 'spot-on' && (
-                            <>
-                                <h1 className="font-serif text-6xl text-gold">SPOT ON</h1>
-                                <p className="font-montserrat font-bold text-sm tracking-[0.3em] text-gold/60 uppercase">+{feedback.scoreAwarded}</p>
-                            </>
-                        )}
-                        {feedback.type === 'close' && (
-                            <>
-                                <h1 className="font-serif text-6xl text-primary">So Close</h1>
-                                <p className="font-montserrat font-bold text-sm tracking-[0.3em] text-primary/60 uppercase">+{feedback.scoreAwarded}</p>
-                            </>
-                        )}
-                        {feedback.type === 'wrong' && (
-                            <>
-                                <h1 className="font-serif text-4xl text-text-muted opacity-40">Correct Age: {feedback.correctAge}</h1>
-                                <p className="font-montserrat font-bold text-sm tracking-[0.3em] text-text-muted/30 uppercase">+0</p>
-                            </>
-                        )}
-
-                        {feedback.type !== 'spot-on' && (
-                            <button
-                                onClick={handleNext}
-                                className="mt-8 px-12 py-4 bg-text-primary text-canvas font-montserrat font-bold text-xs tracking-[0.4em] uppercase rounded-sharp"
-                            >
-                                Next
-                            </button>
-                        )}
-                    </div>
-                </div>
+                <FeedbackOverlay
+                    type={feedback.type}
+                    scoreAwarded={feedback.scoreAwarded}
+                    correctAnswer={feedback.correctAge!}
+                    onComplete={handleNext}
+                    isLastQuestion={isLastQuestion}
+                />
             )}
 
-            {/* Hint Card */}
+            {/* Hint Modal */}
             {showHint && !feedback.type && (
-                <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-8 animate-fade-in backdrop-blur-md">
-                    <div className="bg-surface-raised border border-white/10 p-8 rounded-sharp w-full max-w-xs space-y-6">
-                        <div className="flex justify-between items-center border-b border-white/5 pb-4">
-                            <span className="font-montserrat font-bold text-[10px] text-gold tracking-[0.2em] uppercase">Intel Received</span>
-                            <button onClick={() => setShowHint(false)}><X size={16} /></button>
-                        </div>
-                        <p className="font-serif text-xl text-text-primary italic leading-relaxed">
-                            "{currentQuestion.hints?.[0] || 'No hint available.'}"
-                        </p>
-                        <button
-                            onClick={() => setShowHint(false)}
-                            className="w-full bg-white/5 text-text-primary font-montserrat font-bold text-[10px] tracking-[0.2em] uppercase py-4 rounded-sharp"
-                        >
-                            Understood
-                        </button>
-                    </div>
-                </div>
+                <HintModal
+                    hint={currentQuestion.hints?.[0] || 'No hint available.'}
+                    onClose={() => setShowHint(false)}
+                    onUseHint={() => {
+                        useHint()
+                        setHasUsedHint(true)
+                    }}
+                    isDaily={useGameStore.getState().mode === 'DAILY_CHALLENGE'}
+                />
             )}
 
-            {/* Pause Overlay */}
-            {isPaused && (
-                <div className="fixed inset-0 z-50 bg-canvas flex flex-col items-center justify-center p-8 animate-fade-in">
-                    <h1 className="font-serif text-5xl text-text-primary mb-12">Paused</h1>
-                    <div className="w-full max-w-xs space-y-4">
-                        <button
-                            onClick={() => setIsPaused(false)}
-                            className="w-full bg-primary text-white font-montserrat font-bold text-xs tracking-[0.4em] uppercase py-6 rounded-sharp flex items-center justify-center gap-3"
-                        >
-                            <Play size={16} /> Resume
-                        </button>
-                        <button
-                            onClick={() => router.push('/')}
-                            className="w-full bg-white/5 text-text-muted font-montserrat font-bold text-xs tracking-[0.4em] uppercase py-6 rounded-sharp"
-                        >
-                            Quit Game
-                        </button>
-                    </div>
-                </div>
-            )}
+            {/* Pause Modal */}
+            {isPaused && <GamePauseModal />}
 
         </AppShell>
     )

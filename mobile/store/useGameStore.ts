@@ -16,6 +16,7 @@ interface Question {
     celebrity_name_a?: string
     celebrity_name_b?: string
     hints: string[]
+    options: any[]
     correct_answer: any
 }
 
@@ -31,14 +32,29 @@ interface GameState {
     hintsUsed: number
     startTime: number | null
     questionStartTime: number | null
+    lastGameResult: {
+        totalScore: number
+        questionsCount: number
+        correctCount: number
+        bestStreak: number
+        accuracy: number
+        newHighScore?: boolean
+        lifetimeScore?: number
+        globalRank?: number
+    } | null
+
+    isPaused: boolean
+    pausedAt: number | null
 
     // Actions
     startGame: (sessionId: string, mode: string, questions: Question[]) => void
     nextQuestion: () => void
     submitAnswer: (isCorrect: boolean, scoreAwarded: number) => void
     useHint: () => void
-    endGame: () => void
+    endGame: (result: any) => void
     resetGame: () => void
+    pauseGame: () => void
+    resumeGame: () => void
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -53,6 +69,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     hintsUsed: 0,
     startTime: null,
     questionStartTime: null,
+    lastGameResult: null,
+    isPaused: false,
+    pausedAt: null,
 
     startGame: (sessionId, mode, questions) => {
         set({
@@ -67,6 +86,9 @@ export const useGameStore = create<GameState>((set, get) => ({
             hintsUsed: 0,
             startTime: Date.now(),
             questionStartTime: Date.now(),
+            lastGameResult: null,
+            isPaused: false,
+            pausedAt: null,
         })
     },
 
@@ -80,24 +102,24 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
     },
 
-    submitAnswer: (isCorrect, scoreAwarded) => {
+    submitAnswer: (isCorrect: boolean, scoreAwarded: number) => {
         const { streak, bestStreak, correctCount } = get()
         const newStreak = isCorrect ? streak + 1 : 0
-
         set({
-            score: get().score + scoreAwarded,
             streak: newStreak,
             bestStreak: Math.max(bestStreak, newStreak),
             correctCount: isCorrect ? correctCount + 1 : correctCount,
+            score: get().score + scoreAwarded
         })
     },
+
 
     useHint: () => {
         set({ hintsUsed: get().hintsUsed + 1 })
     },
 
-    endGame: () => {
-        // Game ended, keep state for results screen
+    endGame: (result: any) => {
+        set({ lastGameResult: result })
     },
 
     resetGame: () => {
@@ -113,6 +135,27 @@ export const useGameStore = create<GameState>((set, get) => ({
             hintsUsed: 0,
             startTime: null,
             questionStartTime: null,
+            lastGameResult: null,
+            isPaused: false,
+            pausedAt: null,
         })
+    },
+
+    pauseGame: () => {
+        set({ isPaused: true, pausedAt: Date.now() })
+    },
+
+    resumeGame: () => {
+        const { pausedAt, questionStartTime } = get()
+        if (pausedAt && questionStartTime) {
+            const pausedDuration = Date.now() - pausedAt
+            set({
+                isPaused: false,
+                pausedAt: null,
+                questionStartTime: questionStartTime + pausedDuration
+            })
+        } else {
+            set({ isPaused: false, pausedAt: null })
+        }
     },
 }))

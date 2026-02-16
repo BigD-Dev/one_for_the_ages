@@ -1,153 +1,233 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { useGameStore } from '@/store/useGameStore'
-import { Share } from '@capacitor/share'
 import { AppShell } from '@/components/ui/Layout'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { Share2, ArrowRight } from 'lucide-react'
+import { ResultConfetti } from '@/components/game/ResultConfetti'
+import { Medal, Share2, Target, Calendar, BarChart3, Home } from 'lucide-react'
 
 export default function ResultsPage() {
     const router = useRouter()
-    const {
-        score,
-        streak,
-        bestStreak,
-        correctCount,
-        questions,
-        resetGame,
-    } = useGameStore()
+    const { lastGameResult, score: currentScore, mode, resetGame } = useGameStore()
+    const [showConfetti, setShowConfetti] = useState(false)
+    const [animatedScore, setAnimatedScore] = useState(0)
 
-    const [isAnimated, setIsAnimated] = useState(false)
+    // Fallback if accessed directly (dev) or error state
+    // Fallback if accessed directly (dev) or error state
+    const result = lastGameResult || {
+        totalScore: currentScore,
+        questionsCount: 10,
+        correctCount: 0,
+        bestStreak: 0,
+        accuracy: 0,
+        newHighScore: false,
+        lifetimeScore: currentScore,
+        globalRank: 0
+    }
 
-    const totalQuestions = questions.length
-    const accuracy = totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0
+    // Animate from (Lifetime - Session) -> Lifetime
+    const finalScore = result.lifetimeScore || result.totalScore
+    const deltaScore = result.totalScore
+    const startingScore = Math.max(0, finalScore - deltaScore)
 
     useEffect(() => {
-        if (totalQuestions === 0) {
-            router.push('/')
-            return
+        // Trigger animations
+        setTimeout(() => setShowConfetti(true), 100)
+
+        // Count up animation
+        let startTimestamp: number
+        const duration = 1500
+
+        const step = (timestamp: number) => {
+            if (!startTimestamp) startTimestamp = timestamp
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1)
+            // Ease out cubic
+            const ease = 1 - Math.pow(1 - progress, 3)
+
+            setAnimatedScore(Math.floor(startingScore + (finalScore - startingScore) * ease))
+
+            if (progress < 1) {
+                window.requestAnimationFrame(step)
+            }
         }
-        setIsAnimated(true)
-    }, [totalQuestions, router])
+
+        window.requestAnimationFrame(step)
+    }, [result.totalScore, startingScore, finalScore])
 
     const handleShare = async () => {
-        try {
-            await Share.share({
-                title: 'One for the Ages',
-                text: `I just scored ${score} points on today's Daily Challenge! Can you beat my ${bestStreak} streak?`,
-                url: 'https://ofta.app',
-            })
-        } catch (error) {
-            console.error('Failed to share:', error)
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'One For The Ages',
+                    text: `I just scored ${deltaScore} points in ${mode || 'Challenge'} Mode! My Total XP is now ${finalScore}. Can you beat me?`,
+                    url: window.location.origin
+                })
+            } catch (err) {
+                console.log('Error sharing:', err)
+            }
+        } else {
+            // Fallback: Copy to clipboard
+            navigator.clipboard.writeText(`I just scored ${result.totalScore} in One For The Ages!`)
+            alert('Score copied to clipboard!')
         }
     }
 
-    const handlePlayAgain = () => {
+    const handleHome = () => {
         resetGame()
         router.push('/')
     }
 
-    const getPerformanceLabel = () => {
-        if (accuracy === 100) return 'GOD TIER'
-        if (accuracy >= 90) return 'ELITE'
-        if (accuracy >= 75) return 'CHALLENGER'
-        if (accuracy >= 60) return 'SURVIVOR'
-        if (accuracy >= 40) return 'ROOKIE'
-        return 'ARCHIVED'
-    }
-
-    const getPerformanceColor = () => {
-        if (accuracy === 100) return 'text-gold'
-        if (accuracy >= 75) return 'text-primary'
-        return 'text-text-muted'
+    // Determine badge
+    let Badge = null
+    if (result.newHighScore) {
+        Badge = (
+            <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 1.2, duration: 0.5 }}
+                className="flex items-center gap-2 px-4 py-2 bg-gold/10 border border-gold/30 rounded-full text-gold mb-8 shadow-[0_0_20px_rgba(201,162,39,0.2)]"
+            >
+                <Medal size={18} />
+                <span className="text-sm font-bold uppercase tracking-wider">New High Score</span>
+            </motion.div>
+        )
+    } else if (result.correctCount === result.questionsCount && result.questionsCount > 0) {
+        Badge = (
+            <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 1.2, duration: 0.5 }}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/30 rounded-full text-purple-400 mb-8 shadow-[0_0_20px_rgba(168,85,247,0.2)]"
+            >
+                <Target size={18} />
+                <span className="text-sm font-bold uppercase tracking-wider">Perfect Round</span>
+            </motion.div>
+        )
     }
 
     return (
-        <AppShell className="bg-canvas flex flex-col p-8 md:p-12 overflow-hidden">
+        <div className="min-h-screen bg-canvas flex flex-col items-center justify-center relative overflow-hidden p-6">
+            <ResultConfetti isActive={showConfetti} />
 
-            <header className="mb-12 text-center animate-fade-in">
-                <h1 className="font-montserrat font-bold text-[10px] text-text-muted tracking-[0.4em] uppercase">
-                    Match Results
-                </h1>
-            </header>
+            <div className="w-full max-w-md mx-auto flex flex-col items-center z-10">
 
-            <main className="flex-1 flex flex-col items-center justify-center space-y-12">
+                {/* 1. Celebration Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="text-center mb-8"
+                >
+                    <h1 className="text-xl font-bold text-text-primary uppercase tracking-widest mb-2">
+                        Challenge Complete
+                    </h1>
+                    <div className="w-16 h-0.5 bg-primary/50 mx-auto rounded-full" />
+                </motion.div>
 
-                {/* Score & Label */}
-                <div className={`text-center space-y-2 transition-all duration-1000 ${isAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                    <p className={`font-montserrat font-bold text-xs tracking-[0.3em] uppercase ${getPerformanceColor()}`}>
-                        {getPerformanceLabel()}
-                    </p>
-                    <div className="relative">
-                        <p className="font-serif text-8xl text-text-primary tracking-tighter">
-                            {score}
-                        </p>
-                        <div className="absolute -top-4 -right-8 bg-gold text-canvas font-montserrat font-bold text-[10px] px-2 py-1 rounded-sharp shadow-lg rotate-12">
-                            NEW BEST
+                {/* 2. Animated Score */}
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.5 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.2, type: 'spring', stiffness: 100 }}
+                    className="text-center mb-10 relative"
+                >
+                    <div className="text-6xl font-black text-primary tabular-nums tracking-tighter drop-shadow-lg">
+                        {animatedScore}
+                    </div>
+                    {deltaScore > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 1.0 }}
+                            className="text-sm font-bold text-text-muted mt-2"
+                        >
+                            +{deltaScore} this round
+                        </motion.div>
+                    )}
+                </motion.div>
+
+                {/* 3. Performance Breakdown */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8, duration: 0.5 }}
+                    className="w-full space-y-3 mb-10"
+                >
+                    <div className="flex justify-between items-center p-4 bg-surface rounded-sharp border border-border-subtle">
+                        <div className="flex items-center gap-3 text-text-muted">
+                            <Target size={18} />
+                            <span className="text-sm font-medium uppercase tracking-wide">Accuracy</span>
                         </div>
+                        <span className="text-lg font-bold text-text-primary">
+                            {Math.round(result.accuracy)}%
+                        </span>
                     </div>
-                    <p className="font-sans text-sm text-text-muted font-bold tracking-widest uppercase opacity-60">
-                        Total Points Earned
-                    </p>
-                </div>
 
-                {/* Performance Grid */}
-                <div className={`w-full max-w-sm grid grid-cols-3 gap-3 transition-all duration-1000 delay-300 ${isAnimated ? 'opacity-100' : 'opacity-0'}`}>
-                    <div className="bg-surface-raised border border-white/5 rounded-sharp p-4 text-center space-y-1">
-                        <p className="font-montserrat font-bold text-[10px] text-text-muted uppercase tracking-widest opacity-60">Accuracy</p>
-                        <p className="font-serif text-xl text-text-primary">{Math.round(accuracy)}%</p>
+                    <div className="flex justify-between items-center p-4 bg-surface rounded-sharp border border-border-subtle">
+                        <div className="flex items-center gap-3 text-text-muted">
+                            <BarChart3 size={18} />
+                            <span className="text-sm font-medium uppercase tracking-wide">Correct</span>
+                        </div>
+                        <span className="text-lg font-bold text-text-primary">
+                            {result.correctCount} <span className="text-text-muted text-sm">/ {result.questionsCount}</span>
+                        </span>
                     </div>
-                    <div className="bg-surface-raised border border-white/5 rounded-sharp p-4 text-center space-y-1">
-                        <p className="font-montserrat font-bold text-[10px] text-text-muted uppercase tracking-widest opacity-60">Correct</p>
-                        <p className="font-serif text-xl text-text-primary">{correctCount}/{totalQuestions}</p>
-                    </div>
-                    <div className="bg-surface-raised border border-white/5 rounded-sharp p-4 text-center space-y-1">
-                        <p className="font-montserrat font-bold text-[10px] text-text-muted uppercase tracking-widest opacity-60">Streak</p>
-                        <p className="font-serif text-xl text-gold">{bestStreak}</p>
-                    </div>
-                </div>
 
-                {/* Level Up Progress (Mock) */}
-                <div className={`w-full max-w-sm space-y-3 transition-all duration-1000 delay-500 ${isAnimated ? 'opacity-100' : 'opacity-0'}`}>
-                    <div className="flex justify-between items-end">
-                        <p className="font-montserrat font-bold text-[10px] text-text-muted uppercase tracking-widest">Level 12</p>
-                        <p className="font-montserrat font-bold text-[10px] text-gold uppercase tracking-widest">+120 XP</p>
+                    <div className="flex justify-between items-center p-4 bg-surface rounded-sharp border border-border-subtle">
+                        <div className="flex items-center gap-3 text-text-muted">
+                            <Calendar size={18} />
+                            <span className="text-sm font-medium uppercase tracking-wide">Streak</span>
+                        </div>
+                        <span className="text-lg font-bold text-text-primary flex items-center gap-2">
+                            {result.bestStreak} <span className="text-orange-500">🔥</span>
+                        </span>
                     </div>
-                    <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
-                        <div className="h-full bg-gold transition-all duration-1500 delay-700" style={{ width: '75%' }} />
-                    </div>
-                </div>
 
-            </main>
+                    {result.globalRank && result.globalRank > 0 && (
+                        <div className="flex justify-between items-center p-4 bg-surface rounded-sharp border border-primary/30">
+                            <div className="flex items-center gap-3 text-primary">
+                                <Medal size={18} />
+                                <span className="text-sm font-medium uppercase tracking-wide">Global Rank</span>
+                            </div>
+                            <span className="text-lg font-bold text-primary">
+                                #{result.globalRank}
+                            </span>
+                        </div>
+                    )}
+                </motion.div>
 
-            <footer className={`mt-auto pt-12 space-y-4 transition-all duration-1000 delay-700 ${isAnimated ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-                <button
-                    onClick={handleShare}
-                    className="w-full h-16 bg-surface-raised border border-white/10 text-text-primary font-montserrat font-bold text-xs tracking-widest uppercase flex items-center justify-center gap-3 active:bg-white/5 transition-all"
+                {/* 4. Achievement Badge */}
+                {Badge}
+
+                {/* 5. Actions */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 1.4, duration: 0.5 }}
+                    className="w-full space-y-4"
                 >
-                    <Share2 size={18} />
-                    Share Record
-                </button>
+                    <button
+                        onClick={handleShare}
+                        className="w-full py-4 bg-primary hover:bg-primary-dark text-white font-bold rounded-sharp border-none shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 uppercase tracking-wide text-sm"
+                    >
+                        <Share2 size={18} />
+                        Share to Story
+                    </button>
 
-                <button
-                    onClick={handlePlayAgain}
-                    className="w-full h-16 bg-primary text-white font-montserrat font-bold text-xs tracking-widest uppercase flex items-center justify-center gap-3 active:bg-primary/90 transition-all shadow-xl shadow-primary/20"
-                >
-                    Play Again
-                    <ArrowRight size={18} />
-                </button>
+                    <button
+                        onClick={handleHome}
+                        className="w-full py-4 bg-surface hover:bg-surface-raised text-text-muted font-bold rounded-sharp border border-border-subtle active:scale-[0.98] transition-all flex items-center justify-center gap-2 uppercase tracking-wide text-sm"
+                    >
+                        <Home size={18} />
+                        Back to Home
+                    </button>
+                </motion.div>
 
-                <button
-                    onClick={() => router.push('/')}
-                    className="w-full h-12 text-text-muted font-montserrat font-bold text-[10px] tracking-widest uppercase opacity-40 hover:opacity-100 transition-opacity"
-                >
-                    Return to Lobby
-                </button>
-            </footer>
-
-        </AppShell>
+            </div>
+        </div>
     )
 }

@@ -35,6 +35,7 @@ class QuestionResponse(BaseModel):
     celebrity_name_b: Optional[str] = None
     difficulty: int
     hints: List[str] = []
+    options: List[Any] = []
 
 
 class SessionResponse(BaseModel):
@@ -66,6 +67,8 @@ class EndSessionResponse(BaseModel):
     correct_count: int
     best_streak: int
     accuracy: float
+    lifetime_score: int
+    global_rank: int
 
 
 # ────────────────────────────────────────────────
@@ -82,6 +85,30 @@ async def start_session(
     Generates questions based on mode.
     """
     db = get_db_connector()
+    
+    # 🚨 DEV MOCK
+    if current_user.get("firebase_uid") == "dev_user_123":
+        questions = []
+        for i in range(10):
+            questions.append(QuestionResponse(
+                id=f"q_{i}",
+                mode=request.mode,
+                difficulty=1,
+                celebrity_name="Celebrity A",
+                celebrity_id="celeb_a",
+                celebrity_name_a="Celebrity A",
+                celebrity_id_a="celeb_a",
+                celebrity_name_b="Celebrity B",
+                celebrity_id_b="celeb_b",
+                options=[1980, 1990, 2000]
+            ))
+            
+        return SessionResponse(
+            id="dev_session_123",
+            mode=request.mode,
+            questions=questions,
+            started_at=datetime.utcnow()
+        )
     
     # Get user from database
     user_df = db.select_df(
@@ -133,7 +160,9 @@ async def start_session(
                 qt.celebrity_id,
                 qt.difficulty,
                 c.full_name as celebrity_name,
-                c.hints_easy as hints
+                c.hints_easy as hints,
+                c.star_sign,
+                EXTRACT(YEAR FROM c.date_of_birth) as dob_year
             FROM da_prod.ofta_question_template qt
             JOIN da_prod.ofta_celebrity c ON qt.celebrity_id = c.id
             WHERE qt.mode = :mode AND qt.is_active = TRUE
@@ -168,6 +197,13 @@ async def start_session(
     
     # Format questions
     questions = []
+    import random
+    
+    ZODIAC_SIGNS = [
+        "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+        "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+    ]
+    
     for _, row in questions_df.iterrows():
         question = QuestionResponse(
             id=row['id'],
@@ -184,6 +220,27 @@ async def start_session(
         else:
             question.celebrity_id = row['celebrity_id']
             question.celebrity_name = row['celebrity_name']
+            
+            # Populate options for REVERSE modes
+            if request.mode == "REVERSE_SIGN":
+                # For signs, we can show them ALL (12) or 9. Let's show all 12 for choice.
+                # Or if we want exactly 9 as per wireframe, we pick correct + 8 randoms.
+                correct_sign = row['star_sign']
+                decoys = [s for s in ZODIAC_SIGNS if s != correct_sign]
+                options = random.sample(decoys, 8) + [correct_sign]
+                random.shuffle(options)
+                question.options = options
+                
+            elif request.mode == "REVERSE_DOB":
+                correct_year = int(row['dob_year'])
+                # Generate years around correct year
+                offsets = [-2, -1, 1, 2, 3, 4] # Example offsets for 6 options
+                if random.choice([True, False]):
+                    offsets = [-3, -2, -1, 1, 2, 3, 4, 5] # 9 options
+                
+                options = [correct_year + o for o in random.sample(offsets, 8)] + [correct_year]
+                random.shuffle(options)
+                question.options = options
         
         questions.append(question)
     
@@ -265,7 +322,6 @@ async def submit_answer(
     score_awarded = 0
     
     if mode == "AGE_GUESS":
-        from datetime import date as date_type
         dob = question['date_of_birth']
         if isinstance(dob, str):
             dob = datetime.strptime(dob, '%Y-%m-%d').date()
@@ -309,6 +365,26 @@ async def submit_answer(
         is_correct = user_choice == correct_choice
         score_awarded = 100 if is_correct else 0
         correct_answer = {"choice": correct_choice}
+
+    elif mode == "REVERSE_SIGN":
+        correct_sign = question['star_sign']
+        user_sign = request.user_answer.get('sign', '')
+        
+        is_correct = user_sign == correct_sign
+        score_awarded = 50 if is_correct else 0
+        correct_answer = {"sign": correct_sign}
+
+    elif mode == "REVERSE_DOB":
+        dob = question['date_of_birth']
+        if isinstance(dob, str):
+            dob = datetime.strptime(dob, '%Y-%m-%d').date()
+        
+        correct_year = dob.year
+        user_year = int(request.user_answer.get('year', 0))
+        
+        is_correct = user_year == correct_year
+        score_awarded = 50 if is_correct else 0
+        correct_answer = {"year": correct_year}
     
     # Record attempt
     db.execute_query(
@@ -359,7 +435,7 @@ async def end_session(
     # Verify session
     session_df = db.select_df(
         """
-        SELECT gs.id, ua.firebase_uid
+        SELECT gs.id, gs.user_id, ua.firebase_uid
         FROM da_prod.ofta_game_session gs
         JOIN da_prod.ofta_user_account ua ON gs.user_id = ua.id
         WHERE gs.id = :session_id
@@ -440,11 +516,39 @@ async def end_session(
     
     accuracy = (correct_count / questions_count * 100) if questions_count > 0 else 0
     
+    # Fetch updated stats and rank
+    user_stats_df = db.select_df(
+        """
+        SELECT lifetime_score
+        FROM da_prod.ofta_user_stats
+        WHERE user_id = :user_id
+        """,
+        params={"user_id": session_df.iloc[0]['user_id']} # Need user_id from session_df?
+    )
+    
+    # If user_stats_df is empty (trigger failed or race condition?), default to session score
+    lifetime_score = total_score
+    if not user_stats_df.empty:
+        lifetime_score = int(user_stats_df.iloc[0]['lifetime_score'])
+
+    # Calculate rank (simple count > score)
+    rank_df = db.select_df(
+        """
+        SELECT COUNT(*) as rank_above
+        FROM da_prod.ofta_user_stats
+        WHERE lifetime_score > :score
+        """,
+        params={"score": lifetime_score}
+    )
+    global_rank = int(rank_df.iloc[0]['rank_above']) + 1
+
     return EndSessionResponse(
         session_id=session_id,
         total_score=total_score,
         questions_count=questions_count,
         correct_count=correct_count,
         best_streak=best_streak,
-        accuracy=accuracy
+        accuracy=accuracy,
+        lifetime_score=lifetime_score,
+        global_rank=global_rank
     )

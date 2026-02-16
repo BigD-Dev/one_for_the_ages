@@ -60,12 +60,12 @@ app.state = cast(State, app.state)
 #  CORS
 # ───────────────────────────
 TRUSTED_ORIGINS = [
-    "http://localhost:3000",  # Mobile dev
-    "http://localhost:3001",  # Admin dev
-    "http://localhost:3002",  # Landing dev
-    "capacitor://localhost",  # Capacitor iOS
-    "http://localhost",       # Capacitor Android
-    # Add production domains here
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "http://localhost:3100",
+    "capacitor://localhost",
+    "http://localhost",
 ]
 
 app.add_middleware(
@@ -80,14 +80,14 @@ app.add_middleware(
 # ───────────────────────────
 #  Secure headers middleware
 # ───────────────────────────
-@app.middleware("http")
-async def secure_headers(request: Request, call_next):
-    resp = await call_next(request)
-    resp.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
-    resp.headers["X-Content-Type-Options"] = "nosniff"
-    resp.headers["X-Frame-Options"] = "DENY"
-    resp.headers["Referrer-Policy"] = "same-origin"
-    return resp
+# @app.middleware("http")
+# async def secure_headers(request: Request, call_next):
+#     resp = await call_next(request)
+#     resp.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
+#     resp.headers["X-Content-Type-Options"] = "nosniff"
+#     resp.headers["X-Frame-Options"] = "DENY"
+#     resp.headers["Referrer-Policy"] = "same-origin"
+#     return resp
 
 
 # ───────────────────────────
@@ -154,7 +154,7 @@ def health():
 #  Uvicorn local shim
 # ───────────────────────────
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "8080"))
+    port = int(os.getenv("PORT", "8081"))
     print(f"Starting OFTA API on http://0.0.0.0:{port}")
     uvicorn.run(
         app,

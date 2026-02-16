@@ -67,10 +67,10 @@ check_mobile_deps
 echo ""
 
 # Start backend in background
-echo -e "${GREEN}🚀 Starting Backend (port 8080)...${NC}"
+echo -e "${GREEN}🚀 Starting Backend (port 8081)...${NC}"
 cd "$BACKEND_DIR"
 source venv/bin/activate
-uvicorn main:app --reload --port 8080 > /tmp/ofta_backend.log 2>&1 &
+uvicorn main:app --reload --port 8081 > /tmp/ofta_backend.log 2>&1 &
 BACKEND_PID=$!
 echo "Backend PID: $BACKEND_PID"
 deactivate
@@ -94,8 +94,8 @@ echo ""
 echo -e "${GREEN}✅ One for the Ages is running!${NC}"
 echo ""
 echo "📍 URLs:"
-echo "   Backend API: http://localhost:8080"
-echo "   API Docs:    http://localhost:8080/docs"
+echo "   Backend API: http://localhost:8081"
+echo "   API Docs:    http://localhost:8081/docs"
 echo "   Mobile App:  http://localhost:3100"
 echo ""
 echo "📋 Logs:"

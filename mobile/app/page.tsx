@@ -6,10 +6,63 @@ import { ArtifactCard } from '@/components/ArtifactCard'
 import { BottomNav } from '@/components/ui/BottomNav'
 import { Hourglass, Scale, Star, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import { useAuthStore } from '@/store/useAuthStore'
+import { apiClient } from '@/lib/api-client'
 
 export default function Home() {
+    const { user: authUser, isAuthenticated, setUser, setOftaUser } = useAuthStore()
     const [currentTime, setCurrentTime] = useState(new Date())
     const [timeLeft, setTimeLeft] = useState('')
+
+    // Dev Auto-Login Logic
+    useEffect(() => {
+        const performDevLogin = async () => {
+            if (!isAuthenticated && process.env.NODE_ENV === 'development') {
+                console.log(' performing dev auto-login...')
+                const devUser = {
+                    uid: 'dev_user_123',
+                    email: 'dev@ofta.com',
+                    displayName: 'Dev Player',
+                    emailVerified: true,
+                    isAnonymous: false,
+                    metadata: {},
+                    providerData: [],
+                    refreshToken: '',
+                    tenantId: null,
+                    delete: async () => { },
+                    getIdToken: async () => 'DEV_TOKEN_123',
+                    getIdTokenResult: async () => ({} as any),
+                    reload: async () => { },
+                    toJSON: () => ({}),
+                    phoneNumber: null,
+                    photoURL: null,
+                    providerId: 'firebase',
+                }
+
+                // Set user in store (this sets isAuthenticated=true)
+                setUser(devUser as any)
+
+                // Set token manually for API client
+                apiClient.setToken('DEV_TOKEN_123')
+
+                // Register in backend to ensure DB record exists
+                try {
+                    const oftaUser = await apiClient.register({
+                        firebase_uid: 'dev_user_123',
+                        display_name: 'Dev Player',
+                        email: 'dev@ofta.com',
+                        auth_provider: 'email',
+                    })
+                    setOftaUser(oftaUser)
+                    console.log('✅ Dev user logged in & registered:', oftaUser)
+                } catch (error) {
+                    console.error('❌ Dev login failed:', error)
+                }
+            }
+        }
+
+        performDevLogin()
+    }, [isAuthenticated, setUser, setOftaUser])
 
     // 1. Time-based greeting logic
     const getGreeting = () => {
@@ -42,9 +95,10 @@ export default function Home() {
         return () => clearInterval(timer)
     }, [])
 
+
     // Mock User Data
     const user = {
-        name: 'Diran',
+        name: authUser?.displayName || 'Diran',
         level: 12,
         streak: 7,
         accuracy: 71,

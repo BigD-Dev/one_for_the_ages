@@ -24,7 +24,7 @@ if [ -f /tmp/ofta_mobile.pid ]; then
 fi
 
 # Also kill any uvicorn or next processes on the ports
-lsof -ti:8080 | xargs kill -9 2>/dev/null || true
+lsof -ti:8081 | xargs kill -9 2>/dev/null || true
 lsof -ti:3100 | xargs kill -9 2>/dev/null || true
 
 echo "✅ All services stopped"

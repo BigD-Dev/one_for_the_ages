@@ -7,7 +7,9 @@ import { apiClient } from '@/lib/api-client'
 import { AppShell } from '@/components/ui/Layout'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { ArrowLeft, Settings } from 'lucide-react'
+import { Switch } from '@/components/ui/Switch'
+import { ProgressBar } from '@/components/ui/ProgressBar'
+import { ArrowLeft, Check, LogOut, Trash2 } from 'lucide-react'
 
 interface UserStats {
     lifetime_score: number
@@ -20,35 +22,18 @@ interface UserStats {
     daily_challenges: number
 }
 
-interface Achievement {
-    id: string
-    title: string
-    description: string
-    icon: string | null
-    unlocked: boolean
-    unlocked_at: string | null
-}
-
-interface GameHistory {
-    session_id: string
-    mode: string
-    score: number
-    correct_count: number
-    questions_count: number
-    best_streak: number
-    accuracy: number
-    played_at: string
-}
-
 export default function ProfilePage() {
     const router = useRouter()
-    const { isAuthenticated, oftaUser, user } = useAuthStore()
-
+    const { isAuthenticated, oftaUser, user, logout } = useAuthStore()
     const [stats, setStats] = useState<UserStats | null>(null)
-    const [achievements, setAchievements] = useState<Achievement[]>([])
-    const [history, setHistory] = useState<GameHistory[]>([])
     const [isLoading, setIsLoading] = useState(true)
-    const [activeSection, setActiveSection] = useState<'stats' | 'history' | 'achievements'>('stats')
+
+    // Settings State (Local for now, persist to localStorage later)
+    const [settings, setSettings] = useState({
+        sound: true,
+        haptics: true,
+        notifications: true,
+    })
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -56,200 +41,190 @@ export default function ProfilePage() {
             return
         }
         loadProfile()
+
+        // Load settings from localStorage
+        const savedSettings = localStorage.getItem('ofta-settings')
+        if (savedSettings) {
+            setSettings(JSON.parse(savedSettings))
+        }
     }, [isAuthenticated])
 
     const loadProfile = async () => {
         try {
-            const [statsData, achData, historyData] = await Promise.all([
-                apiClient.getUserStats().catch(() => null),
-                apiClient.getUserAchievements().catch(() => ({ achievements: [] })),
-                apiClient.getUserHistory().catch(() => ({ games: [] })),
-            ])
+            const statsData = await apiClient.getUserStats().catch(() => null)
             setStats(statsData)
-            setAchievements(achData?.achievements || [])
-            setHistory(historyData?.games || [])
         } catch (error) {
             console.error('Failed to load profile:', error)
+        } finally {
+            setIsLoading(false)
         }
-        setIsLoading(false)
     }
 
-    const getModeLabel = (mode: string) => {
-        const labels: Record<string, string> = {
-            'AGE_GUESS': 'Age Guess',
-            'WHO_OLDER': "Who's Older",
-            'DAILY_CHALLENGE': 'Daily',
-            'REVERSE_SIGN': 'Reverse',
-        }
-        return labels[mode] || mode
+    const toggleSetting = (key: keyof typeof settings) => {
+        const newSettings = { ...settings, [key]: !settings[key] }
+        setSettings(newSettings)
+        localStorage.setItem('ofta-settings', JSON.stringify(newSettings))
     }
 
-    const formatDate = (dateStr: string) => {
-        const d = new Date(dateStr)
-        return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    const handleLogout = () => {
+        logout()
+        router.push('/')
     }
 
     if (isLoading) {
         return (
-            <AppShell className="flex items-center justify-center">
-                <div className="skeleton w-12 h-12 rounded-full" />
+            <AppShell className="flex items-center justify-center min-h-screen">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
             </AppShell>
         )
     }
 
+    // Derived Stats
+    const totalScore = stats?.lifetime_score || 0
+    const level = Math.floor(totalScore / 1000) + 1
+    const currentXP = totalScore % 1000
+    const nextLevelXP = 1000
+    const accuracy = stats?.accuracy_pct ? Math.round(stats.accuracy_pct) : 0
+    // Mock win rate for now as accuracy
+    const winRate = accuracy
+
     return (
-        <AppShell>
-            {/* Header */}
-            <header className="flex items-center justify-between mb-6">
-                <Button variant="ghost" onClick={() => router.push('/')} className="text-text-muted">
-                    <ArrowLeft size={18} className="mr-1" /> Back
-                </Button>
-                <h1 className="text-xl font-bold text-text-primary font-serif">Profile</h1>
-                <button onClick={() => router.push('/settings')} className="text-text-muted active:opacity-80 transition-opacity duration-150 p-2">
-                    <Settings size={18} />
+        <AppShell className="bg-canvas pb-24 px-6 pt-6 font-sans">
+            {/* Header: Back Button */}
+            <header className="flex items-center justify-between mb-8">
+                <button
+                    onClick={() => router.push('/')}
+                    className="flex items-center text-text-muted hover:text-text-primary transition-colors"
+                >
+                    <ArrowLeft size={20} className="mr-2" />
+                    <span className="text-sm font-medium tracking-wide uppercase">Back</span>
                 </button>
+                <h1 className="text-sm font-bold text-text-primary tracking-[0.2em] uppercase">Profile</h1>
+                <div className="w-6" /> {/* Spacer for alignment */}
             </header>
 
-            {/* User Card */}
-            <Card className="p-6 mb-6 text-center">
-                <div className="w-20 h-20 rounded-full border-2 border-gold mx-auto mb-4 flex items-center justify-center bg-surface">
-                    <span className="text-3xl font-serif text-gold">
-                        {oftaUser?.display_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'}
+            {/* 1️⃣ Identity Header */}
+            <section className="flex flex-col items-center mb-10">
+                <div className="w-24 h-24 rounded-full border-2 border-primary/30 flex items-center justify-center bg-surface-raised mb-4 shadow-[0_0_15px_rgba(30,122,140,0.15)] relative">
+                    <span className="text-4xl font-serif text-primary">
+                        {oftaUser?.display_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'P'}
                     </span>
+                    {/* Optional: Online Indicator */}
+                    <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-canvas" />
                 </div>
-                <h2 className="text-xl font-bold text-text-primary font-serif">
+
+                <h2 className="text-xl font-bold text-text-primary font-serif mb-1">
                     {oftaUser?.display_name || user?.displayName || 'Anonymous Player'}
                 </h2>
-                <p className="text-text-muted text-sm">
-                    {user?.email || 'Guest Account'}
-                </p>
-                {stats && (
-                    <p className="text-primary text-sm mt-2 font-mono">
-                        {stats.games_played} games played
+                <div className="flex flex-col items-center w-full max-w-[200px] gap-2">
+                    <p className="text-xs text-primary tracking-widest uppercase font-bold">
+                        Level {level}
                     </p>
-                )}
+                    <div className="w-full">
+                        <ProgressBar value={currentXP} max={nextLevelXP} color="bg-primary" />
+                        <div className="flex justify-between mt-1 text-[9px] text-text-muted font-mono">
+                            <span>{currentXP} XP</span>
+                            <span>{nextLevelXP} XP</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* 2️⃣ Primary Stats Card */}
+            <Card className="p-0 border-border-subtle bg-surface-raised overflow-hidden mb-6">
+                <div className="grid grid-cols-2 divide-x divide-border-subtle">
+                    <StatBox label="Avg. Score" value={stats?.lifetime_score ? Math.round(stats.lifetime_score / (stats.games_played || 1)).toString() : "0"} />
+                    <StatBox label="Accuracy" value={`${winRate}%`} color="text-green-400" />
+                </div>
+                <div className="border-t border-border-subtle grid grid-cols-2 divide-x divide-border-subtle">
+                    <StatBox label="Best Score" value={stats?.lifetime_score ? "N/A" : "0"} /> {/* Need Best Score in API */}
+                    <StatBox label="Games Played" value={stats?.games_played.toString() || "0"} />
+                </div>
             </Card>
 
-            {/* Quick Stats */}
-            {stats && (
-                <div className="grid grid-cols-3 gap-3 mb-6">
-                    <Card className="p-4 text-center">
-                        <p className="text-2xl font-bold text-primary font-mono">{stats.lifetime_score.toLocaleString()}</p>
-                        <p className="text-text-muted text-xs">Total Score</p>
-                    </Card>
-                    <Card className="p-4 text-center">
-                        <p className="text-2xl font-bold text-gold font-mono">{stats.best_streak}</p>
-                        <p className="text-text-muted text-xs">Best Streak</p>
-                    </Card>
-                    <Card className="p-4 text-center">
-                        <p className="text-2xl font-bold text-green-400 font-mono">{stats.accuracy_pct.toFixed(0)}%</p>
-                        <p className="text-text-muted text-xs">Accuracy</p>
-                    </Card>
-                </div>
-            )}
+            {/* 3️⃣ Streak Section */}
+            <Card className="p-5 border-gold/30 bg-gradient-to-r from-surface-raised via-surface-raised to-[#1A1810] mb-8 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gold/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
 
-            {/* Section Tabs */}
-            <div className="flex bg-surface rounded-sharp border border-border-subtle p-1 mb-6">
-                {(['stats', 'history', 'achievements'] as const).map((tab) => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveSection(tab)}
-                        className={`flex-1 py-2 rounded-sharp text-sm font-medium transition-colors duration-150 ${
-                            activeSection === tab
-                                ? 'bg-primary text-white'
-                                : 'text-text-muted'
-                        }`}
-                    >
-                        {tab === 'stats' && 'Stats'}
-                        {tab === 'history' && 'History'}
-                        {tab === 'achievements' && 'Awards'}
+                <div className="flex items-center justify-between relative z-10">
+                    <div>
+                        <div className="flex items-center gap-2 mb-1">
+                            <span className="text-gold animate-pulse">🔥</span>
+                            <span className="text-sm font-bold text-gold tracking-widest uppercase">Current Streak</span>
+                        </div>
+                        <p className="text-3xl font-serif text-text-primary">
+                            {stats?.best_streak || 0} <span className="text-base font-sans text-text-muted">Days</span>
+                        </p>
+                    </div>
+                    <div className="text-right">
+                        <p className="text-[10px] text-text-muted uppercase tracking-widest mb-1">Longest</p>
+                        <p className="text-lg font-mono text-text-primary">{stats?.best_streak || 0}</p>
+                    </div>
+                </div>
+            </Card>
+
+            {/* 4️⃣ Settings Controls */}
+            <section className="space-y-4 mb-10">
+                <h3 className="text-[10px] text-text-muted uppercase tracking-[0.2em] px-1 font-bold">Preferences</h3>
+                <Card className="divide-y divide-border-subtle bg-surface-raised border-border-subtle">
+                    <SettingRow
+                        label="Sound Effects"
+                        checked={settings.sound}
+                        onChange={() => toggleSetting('sound')}
+                    />
+                    <SettingRow
+                        label="Haptics"
+                        checked={settings.haptics}
+                        onChange={() => toggleSetting('haptics')}
+                    />
+                    <SettingRow
+                        label="Notifications"
+                        checked={settings.notifications}
+                        onChange={() => toggleSetting('notifications')}
+                    />
+                </Card>
+            </section>
+
+            {/* 5️⃣ Account Controls */}
+            <section className="space-y-4 mb-8">
+                <h3 className="text-[10px] text-text-muted uppercase tracking-[0.2em] px-1 font-bold">Account</h3>
+                <button
+                    onClick={handleLogout}
+                    className="w-full py-4 text-sm font-medium text-text-primary bg-surface-raised border border-border-subtle rounded-sharp hover:bg-surface transition-colors flex items-center justify-center gap-2"
+                >
+                    <LogOut size={16} />
+                    Log Out
+                </button>
+                <div className="flex justify-center">
+                    <button className="text-xs text-red-400/70 hover:text-red-400 transition-colors uppercase tracking-widest py-2">
+                        Delete Account
                     </button>
-                ))}
+                </div>
+            </section>
+
+            <div className="text-center pb-8">
+                <p className="text-[10px] text-border-subtle font-mono">
+                    ID: {oftaUser?.firebase_uid || user?.uid || 'GUEST'} • v1.0.0
+                </p>
             </div>
-
-            {/* Stats Section */}
-            {activeSection === 'stats' && stats && (
-                <div className="space-y-1">
-                    <StatRow label="Total Score" value={stats.lifetime_score.toLocaleString()} />
-                    <StatRow label="Games Played" value={stats.games_played.toString()} />
-                    <StatRow label="Best Streak" value={stats.best_streak.toString()} />
-                    <StatRow label="Total Correct" value={`${stats.total_correct} / ${stats.total_questions}`} />
-                    <StatRow label="Accuracy" value={`${stats.accuracy_pct.toFixed(1)}%`} />
-                    <StatRow label="Daily Challenges" value={stats.daily_challenges.toString()} />
-                    {stats.favourite_category && (
-                        <StatRow label="Favourite Category" value={stats.favourite_category} />
-                    )}
-                </div>
-            )}
-
-            {/* History Section */}
-            {activeSection === 'history' && (
-                <div className="space-y-1">
-                    {history.length === 0 ? (
-                        <div className="text-center py-8">
-                            <p className="text-text-muted">No games played yet</p>
-                            <Button onClick={() => router.push('/')} className="mt-4">
-                                Play Now
-                            </Button>
-                        </div>
-                    ) : (
-                        history.map((game) => (
-                            <Card key={game.session_id} className="p-4">
-                                <div className="flex justify-between items-start mb-2">
-                                    <div>
-                                        <p className="text-text-primary font-medium">{getModeLabel(game.mode)}</p>
-                                        <p className="text-text-muted text-xs">{formatDate(game.played_at)}</p>
-                                    </div>
-                                    <p className="text-primary font-bold font-mono">{game.score}</p>
-                                </div>
-                                <div className="flex gap-4 text-xs text-text-muted font-mono">
-                                    <span>{game.correct_count}/{game.questions_count} correct</span>
-                                    <span>{game.accuracy.toFixed(0)}% acc</span>
-                                    <span>{game.best_streak} streak</span>
-                                </div>
-                            </Card>
-                        ))
-                    )}
-                </div>
-            )}
-
-            {/* Achievements Section */}
-            {activeSection === 'achievements' && (
-                <div className="space-y-1">
-                    {achievements.length === 0 ? (
-                        <div className="text-center py-8">
-                            <p className="text-text-muted">No achievements yet</p>
-                        </div>
-                    ) : (
-                        achievements.map((ach) => (
-                            <Card
-                                key={ach.id}
-                                className={`p-4 flex items-center gap-4 ${!ach.unlocked ? 'opacity-50' : ''}`}
-                            >
-                                <div className="text-2xl">{ach.icon || '*'}</div>
-                                <div className="flex-1">
-                                    <p className={`font-medium ${ach.unlocked ? 'text-text-primary' : 'text-text-muted'}`}>
-                                        {ach.title}
-                                    </p>
-                                    <p className="text-text-muted text-xs">{ach.description}</p>
-                                </div>
-                                {ach.unlocked && (
-                                    <span className="text-green-400 text-sm font-mono">Done</span>
-                                )}
-                            </Card>
-                        ))
-                    )}
-                </div>
-            )}
         </AppShell>
     )
 }
 
-function StatRow({ label, value }: { label: string; value: string }) {
+function StatBox({ label, value, color = "text-text-primary" }: { label: string, value: string, color?: string }) {
     return (
-        <div className="flex items-center justify-between py-3 px-4 border-b border-border-subtle">
-            <p className="text-text-muted">{label}</p>
-            <p className="text-text-primary font-bold font-mono">{value}</p>
+        <div className="p-4 text-center">
+            <p className="text-[10px] text-text-muted uppercase tracking-widest mb-1">{label}</p>
+            <p className={`text-xl font-bold font-mono ${color}`}>{value}</p>
+        </div>
+    )
+}
+
+function SettingRow({ label, checked, onChange }: { label: string, checked: boolean, onChange: () => void }) {
+    return (
+        <div className="flex items-center justify-between p-4">
+            <span className="text-sm text-text-primary font-medium">{label}</span>
+            <Switch checked={checked} onCheckedChange={onChange} />
         </div>
     )
 }

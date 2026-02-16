@@ -55,6 +55,20 @@ async def register_user(
     """
     db = get_db_connector()
     
+    # 🚨 DEV MOCK
+    if request.firebase_uid == "dev_user_123" or current_user.get("firebase_uid") == "dev_user_123":
+        return UserResponse(
+            id="dev_user_id_123",
+            firebase_uid="dev_user_123",
+            display_name="Dev Player",
+            email="dev@ofta.com",
+            country="US",
+            device_os="web",
+            auth_provider="email",
+            created_at=datetime.utcnow(),
+            last_active_at=datetime.utcnow()
+        )
+    
     # Verify the firebase_uid matches the authenticated user
     if request.firebase_uid != current_user["firebase_uid"]:
         raise HTTPException(

@@ -74,6 +74,17 @@ async def verify_firebase_token(
     """
     token = credentials.credentials
     
+    # 🚨 DEV BACKDOOR
+    if token == "DEV_TOKEN_123":
+        return {
+            "uid": "dev_user_123",
+            "email": "dev@ofta.com",
+            "email_verified": True,
+            "name": "Dev Player",
+            "picture": None,
+            "firebase": {"sign_in_provider": "password"}
+        }
+
     try:
         # Verify the token
         decoded_token = auth.verify_id_token(token)

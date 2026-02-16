@@ -36,12 +36,13 @@ export const ArtifactCard = ({
     flex flex-col justify-between group transition-all duration-300
     ${variant === 'hero' ? 'aspect-[4/3] border-gold/30' : ''}
     ${variant === 'standard' ? 'aspect-square' : ''}
-    ${variant === 'wide' ? 'aspect-[3/1]' : ''}
+    ${variant === 'wide' ? 'aspect-auto' : ''}
+    ${href ? 'cursor-pointer hover:border-gold/30' : ''}
     ${className}
   `
 
     const content = (
-        <>
+        <div className="flex flex-col h-full justify-between">
             <div className="flex justify-between items-start">
                 {/* Icon or Year Badge */}
                 {year && (
@@ -69,7 +70,7 @@ export const ArtifactCard = ({
                     </p>
                 )}
             </div>
-        </>
+        </div>
     )
 
     if (!href) {
