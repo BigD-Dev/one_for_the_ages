@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { LucideIcon } from 'lucide-react'
+import { twMerge } from 'tailwind-merge'
 
 interface Option {
     id: string | number
@@ -30,7 +31,7 @@ export const OptionsGrid = ({
     accentColor = 'teal'
 }: OptionsGridProps) => {
     return (
-        <div className={`grid grid-cols-3 gap-3 ${className}`}>
+        <div className={twMerge('grid grid-cols-3 gap-3', className)}>
             {options.map((option) => {
                 const isSelected = selectedId === option.id
                 const isCorrect = correctId === option.id

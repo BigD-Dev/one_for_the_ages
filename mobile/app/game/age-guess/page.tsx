@@ -8,6 +8,7 @@ import { GameLoadingSkeleton } from '@/components/ui/SkeletonLoader'
 import { GamePauseModal } from '@/components/game/GamePauseModal'
 import { HintModal } from '@/components/game/HintModal'
 import { FeedbackOverlay } from '@/components/game/FeedbackOverlay'
+import { OptionsGrid } from '@/components/game/OptionsGrid'
 import { useGameStore } from '@/store/useGameStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
@@ -72,11 +73,16 @@ export default function AgeGuessPage() {
         }
     }, [isAuthenticated, sessionId, router, startGame])
 
-    const handleSubmit = async () => {
-        if (!guess || !currentQuestion || isSubmitting || feedback.type) return
+    const handleOptionSelect = (id: string | number) => {
+        if (isSubmitting || feedback.type) return
+        const val = Number(id)
+        setGuess(val.toString())
+        handleSubmit(val)
+    }
 
-        const userGuess = parseInt(guess, 10)
-        if (isNaN(userGuess) || userGuess < 0 || userGuess > 120) return
+    const handleSubmit = async (manualGuess?: number) => {
+        const userGuess = manualGuess !== undefined ? manualGuess : parseInt(guess, 10)
+        if (isNaN(userGuess) || !currentQuestion || isSubmitting || feedback.type) return
 
         setIsSubmitting(true)
         try {
@@ -218,33 +224,20 @@ export default function AgeGuessPage() {
                 </div>
             </div>
 
-            {/* 3️⃣ Slot Input Area */}
-            <div className="space-y-8 mb-8">
-                <div className="flex justify-center flex-col items-center">
-                    <div className="relative group">
-                        <input
-                            type="number"
-                            inputMode="numeric"
-                            value={guess}
-                            onChange={(e) => setGuess(e.target.value)}
-                            placeholder="--"
-                            disabled={!!feedback.type}
-                            className={`w-32 bg-surface-raised border-2 border-white/5 rounded-sharp text-center text-6xl font-serif text-gold py-6 focus:border-primary transition-all placeholder:opacity-10 outline-none
-                                ${feedback.type ? 'opacity-50' : 'animate-pulse-slow'}
-                            `}
-                        />
-                        <div className="absolute -inset-4 border border-primary/5 rounded-sharp -z-10 group-focus-within:border-primary/20 transition-all" />
-                    </div>
-                </div>
-
-                {/* 4️⃣ Submit Button */}
-                <button
-                    onClick={handleSubmit}
-                    disabled={!guess || isSubmitting || !!feedback.type}
-                    className="w-full bg-primary text-white font-montserrat font-bold text-sm tracking-[0.4em] uppercase py-6 rounded-sharp shadow-xl shadow-primary/10 active:scale-[0.98] transition-all disabled:opacity-20 disabled:grayscale"
-                >
-                    {isSubmitting ? 'Verifying...' : 'Submit Guess'}
-                </button>
+            {/* 3️⃣ Options Grid */}
+            <div className="w-full max-w-md mx-auto mb-8 px-4">
+                <OptionsGrid
+                    options={currentQuestion.options?.map((opt: number) => ({
+                        id: opt,
+                        label: opt.toString(),
+                    })) || []}
+                    onSelect={handleOptionSelect}
+                    selectedId={guess ? parseInt(guess, 10) : undefined}
+                    correctId={feedback.correctAge}
+                    disabled={isSubmitting || !!feedback.type}
+                    className="grid-cols-2 gap-4"
+                    accentColor="teal"
+                />
             </div>
 
             {/* 5️⃣ Secondary Controls */}

@@ -162,6 +162,7 @@ async def start_session(
                 c.full_name as celebrity_name,
                 c.hints_easy as hints,
                 c.star_sign,
+                c.date_of_birth,
                 EXTRACT(YEAR FROM c.date_of_birth) as dob_year
             FROM da_prod.ofta_question_template qt
             JOIN da_prod.ofta_celebrity c ON qt.celebrity_id = c.id
@@ -239,6 +240,33 @@ async def start_session(
                     offsets = [-3, -2, -1, 1, 2, 3, 4, 5] # 9 options
                 
                 options = [correct_year + o for o in random.sample(offsets, 8)] + [correct_year]
+                random.shuffle(options)
+                question.options = options
+
+            elif request.mode == "AGE_GUESS":
+                # Calculate age
+                dob = row['date_of_birth']
+                # Handle types - pandas Timestamp or date or str
+                if hasattr(dob, 'to_pydatetime'): 
+                    dob = dob.to_pydatetime().date()
+                elif isinstance(dob, datetime):
+                    dob = dob.date()
+                elif isinstance(dob, str):
+                    dob = datetime.strptime(dob, '%Y-%m-%d').date()
+
+                today = date.today()
+                correct_age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+                
+                # Generate distractors (3 wrong options)
+                distractors = set()
+                while len(distractors) < 3:
+                    # Random deviation roughly between 3 and 12 years (mix of +/-)
+                    diff = random.choice([i for i in range(-12, 13) if abs(i) >= 3])
+                    d = correct_age + diff
+                    if 16 <= d <= 100 and d != correct_age:
+                        distractors.add(d)
+                
+                options = list(distractors) + [correct_age]
                 random.shuffle(options)
                 question.options = options
         
