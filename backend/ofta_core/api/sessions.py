@@ -100,7 +100,7 @@ async def start_session(
                 celebrity_id_a="celeb_a",
                 celebrity_name_b="Celebrity B",
                 celebrity_id_b="celeb_b",
-                options=[1980, 1990, 2000]
+                options=[28, 32, 35, 39]
             ))
             
         return SessionResponse(
