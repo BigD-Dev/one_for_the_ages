@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
+import { logger } from '@/lib/logger'
 import { signOut } from '@/lib/firebase'
 import { AppShell } from '@/components/ui/Layout'
 import { Card } from '@/components/ui/Card'
@@ -28,7 +29,7 @@ export default function SettingsPage() {
             await apiClient.updateProfile({ display_name: displayName, country })
             setSaveMsg('Profile saved!')
         } catch (error) {
-            console.error('Failed to save:', error)
+            logger.error('Failed to save:', error)
             setSaveMsg('Failed to save')
         }
         setIsSaving(false)
@@ -40,7 +41,7 @@ export default function SettingsPage() {
             logout()
             router.push('/')
         } catch (error) {
-            console.error('Logout failed:', error)
+            logger.error('Logout failed:', error)
         }
     }
 
@@ -51,7 +52,7 @@ export default function SettingsPage() {
             logout()
             router.push('/')
         } catch (error) {
-            console.error('Delete failed:', error)
+            logger.error('Delete failed:', error)
         }
     }
 

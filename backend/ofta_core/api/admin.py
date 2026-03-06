@@ -4,7 +4,8 @@ Admin API endpoints for OFTA content management.
 These endpoints power the admin panel.
 """
 
-from fastapi import APIRouter, HTTPException, status
+import os
+from fastapi import APIRouter, HTTPException, status, Depends, Header
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
@@ -13,7 +14,18 @@ import uuid
 
 from ofta_core.utils.util_db import get_db_connector
 
-router = APIRouter()
+
+async def verify_admin_key(x_admin_key: Optional[str] = Header(None)):
+    """Verify admin API key from X-Admin-Key header."""
+    expected_key = os.getenv("ADMIN_API_KEY")
+    if expected_key and x_admin_key != expected_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing admin API key"
+        )
+
+
+router = APIRouter(dependencies=[Depends(verify_admin_key)])
 
 
 # ────────────────────────────────────────────────
@@ -304,3 +316,129 @@ async def upsert_config(request: ConfigRequest):
     )
 
     return {"status": "saved"}
+
+
+# ────────────────────────────────────────────────
+# Analytics
+# ────────────────────────────────────────────────
+
+@router.get("/analytics/sessions-per-day")
+async def analytics_sessions_per_day():
+    """Get sessions count per day for the last 7 days."""
+    db = get_db_connector()
+    df = db.select_df("""
+        SELECT
+            DATE(started_at) as day,
+            COUNT(*) as count
+        FROM da_prod.ofta_game_session
+        WHERE started_at >= NOW() - INTERVAL '7 days'
+        GROUP BY DATE(started_at)
+        ORDER BY day DESC
+    """)
+
+    days = []
+    for _, row in df.iterrows():
+        days.append({
+            "date": str(row['day']),
+            "count": int(row['count'])
+        })
+    return {"days": days}
+
+
+@router.get("/analytics/score-distribution")
+async def analytics_score_distribution():
+    """Get score distribution across all completed sessions."""
+    db = get_db_connector()
+    df = db.select_df("""
+        SELECT
+            CASE
+                WHEN total_score < 100 THEN '0-99'
+                WHEN total_score < 300 THEN '100-299'
+                WHEN total_score < 500 THEN '300-499'
+                WHEN total_score < 700 THEN '500-699'
+                WHEN total_score < 900 THEN '700-899'
+                ELSE '900+'
+            END as bracket,
+            COUNT(*) as count
+        FROM da_prod.ofta_game_session
+        WHERE ended_at IS NOT NULL AND total_score IS NOT NULL
+        GROUP BY bracket
+        ORDER BY bracket
+    """)
+
+    buckets = []
+    for _, row in df.iterrows():
+        buckets.append({
+            "bracket": row['bracket'],
+            "count": int(row['count'])
+        })
+    return {"distribution": buckets}
+
+
+@router.get("/analytics/active-users")
+async def analytics_active_users():
+    """Get active user counts for different time periods."""
+    db = get_db_connector()
+
+    dau = db.select_df(
+        "SELECT COUNT(DISTINCT user_id) as cnt FROM da_prod.ofta_game_session WHERE started_at >= NOW() - INTERVAL '1 day'"
+    )
+    wau = db.select_df(
+        "SELECT COUNT(DISTINCT user_id) as cnt FROM da_prod.ofta_game_session WHERE started_at >= NOW() - INTERVAL '7 days'"
+    )
+    mau = db.select_df(
+        "SELECT COUNT(DISTINCT user_id) as cnt FROM da_prod.ofta_game_session WHERE started_at >= NOW() - INTERVAL '30 days'"
+    )
+
+    return {
+        "dau": int(dau.iloc[0]['cnt']) if not dau.empty else 0,
+        "wau": int(wau.iloc[0]['cnt']) if not wau.empty else 0,
+        "mau": int(mau.iloc[0]['cnt']) if not mau.empty else 0,
+    }
+
+
+# ────────────────────────────────────────────────
+# Bulk Import
+# ────────────────────────────────────────────────
+
+@router.post("/celebrities/bulk-import")
+async def bulk_import_celebrities(celebrities: List[CelebrityCreateRequest]):
+    """Bulk import celebrities from a list."""
+    db = get_db_connector()
+    created = 0
+    errors = []
+
+    for celeb in celebrities:
+        try:
+            celeb_id = str(uuid.uuid4())
+            db.execute_query(
+                """
+                INSERT INTO da_prod.ofta_celebrity (
+                    id, full_name, date_of_birth, star_sign, primary_category,
+                    nationality, gender, popularity_score,
+                    hints_easy, hints_medium, hints_hard
+                ) VALUES (
+                    :id, :full_name, :date_of_birth, :star_sign, :primary_category,
+                    :nationality, :gender, :popularity_score,
+                    :hints_easy::jsonb, :hints_medium::jsonb, :hints_hard::jsonb
+                )
+                """,
+                params={
+                    "id": celeb_id,
+                    "full_name": celeb.full_name,
+                    "date_of_birth": celeb.date_of_birth,
+                    "star_sign": celeb.star_sign,
+                    "primary_category": celeb.primary_category,
+                    "nationality": celeb.nationality,
+                    "gender": celeb.gender,
+                    "popularity_score": celeb.popularity_score,
+                    "hints_easy": json.dumps(celeb.hints_easy or []),
+                    "hints_medium": json.dumps(celeb.hints_medium or []),
+                    "hints_hard": json.dumps(celeb.hints_hard or []),
+                }
+            )
+            created += 1
+        except Exception as e:
+            errors.append({"name": celeb.full_name, "error": str(e)})
+
+    return {"created": created, "errors": errors}

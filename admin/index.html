@@ -23,6 +23,9 @@
             <a href="#" class="nav-item active" data-page="dashboard" id="nav-dashboard">
                 <span class="nav-icon">📊</span> Dashboard
             </a>
+            <a href="#" class="nav-item" data-page="analytics" id="nav-analytics">
+                <span class="nav-icon">📈</span> Analytics
+            </a>
             <a href="#" class="nav-item" data-page="celebrities" id="nav-celebrities">
                 <span class="nav-icon">⭐</span> Celebrities
             </a>
@@ -56,6 +59,19 @@
                 <span class="user-badge">Admin</span>
             </div>
         </header>
+
+        <!-- API Key Bar -->
+        <div class="api-key-bar">
+            <label class="api-key-label" for="api-key-input">API Key</label>
+            <input
+                class="api-key-input"
+                id="api-key-input"
+                type="password"
+                placeholder="Enter admin API key (stored locally)"
+                autocomplete="off"
+            >
+            <span class="api-key-hint">Sent as X-Admin-Key header with every request</span>
+        </div>
 
         <!-- Page Container -->
         <div class="page-container" id="page-container">

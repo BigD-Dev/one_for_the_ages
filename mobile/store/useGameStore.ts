@@ -5,7 +5,7 @@
 
 import { create } from 'zustand'
 
-interface Question {
+export interface Question {
     id: string
     mode: string
     celebrity_id?: string
@@ -16,8 +16,19 @@ interface Question {
     celebrity_name_a?: string
     celebrity_name_b?: string
     hints: string[]
-    options: any[]
-    correct_answer: any
+    options: (string | number)[]
+    correct_answer: Record<string, unknown> | null
+}
+
+export interface GameResult {
+    totalScore: number
+    questionsCount: number
+    correctCount: number
+    bestStreak: number
+    accuracy: number
+    newHighScore?: boolean
+    lifetimeScore?: number
+    globalRank?: number
 }
 
 interface GameState {
@@ -32,16 +43,7 @@ interface GameState {
     hintsUsed: number
     startTime: number | null
     questionStartTime: number | null
-    lastGameResult: {
-        totalScore: number
-        questionsCount: number
-        correctCount: number
-        bestStreak: number
-        accuracy: number
-        newHighScore?: boolean
-        lifetimeScore?: number
-        globalRank?: number
-    } | null
+    lastGameResult: GameResult | null
 
     isPaused: boolean
     pausedAt: number | null
@@ -51,7 +53,7 @@ interface GameState {
     nextQuestion: () => void
     submitAnswer: (isCorrect: boolean, scoreAwarded: number) => void
     useHint: () => void
-    endGame: (result: any) => void
+    endGame: (result?: GameResult) => void
     resetGame: () => void
     pauseGame: () => void
     resumeGame: () => void
@@ -118,8 +120,10 @@ export const useGameStore = create<GameState>((set, get) => ({
         set({ hintsUsed: get().hintsUsed + 1 })
     },
 
-    endGame: (result: any) => {
-        set({ lastGameResult: result })
+    endGame: (result?: GameResult) => {
+        if (result) {
+            set({ lastGameResult: result })
+        }
     },
 
     resetGame: () => {

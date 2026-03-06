@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
+import { logger } from '@/lib/logger'
 import { AppShell } from '@/components/ui/Layout'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -51,7 +52,7 @@ export default function LeaderboardPage() {
                 setMyRank(data.current_user_rank)
             }
         } catch (error) {
-            console.error('Failed to load leaderboard:', error)
+            logger.error('Failed to load leaderboard:', error)
         }
         setIsLoading(false)
     }

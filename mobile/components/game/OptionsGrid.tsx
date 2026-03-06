@@ -19,6 +19,7 @@ interface OptionsGridProps {
     disabled?: boolean
     className?: string
     accentColor?: 'teal' | 'violet'
+    label?: string
 }
 
 export const OptionsGrid = ({
@@ -28,10 +29,15 @@ export const OptionsGrid = ({
     correctId,
     disabled = false,
     className = '',
-    accentColor = 'teal'
+    accentColor = 'teal',
+    label = 'Answer options',
 }: OptionsGridProps) => {
     return (
-        <div className={twMerge('grid grid-cols-3 gap-3', className)}>
+        <div
+            role="radiogroup"
+            aria-label={label}
+            className={twMerge('grid grid-cols-3 gap-3', className)}
+        >
             {options.map((option) => {
                 const isSelected = selectedId === option.id
                 const isCorrect = correctId === option.id
@@ -50,10 +56,13 @@ export const OptionsGrid = ({
                 return (
                     <motion.button
                         key={option.id}
+                        role="radio"
+                        aria-checked={isSelected}
+                        aria-label={option.label}
                         whileTap={!disabled ? { scale: 0.95 } : {}}
                         transition={{ duration: 0.15 }}
                         className={`
-                            relative flex flex-col items-center justify-center 
+                            relative flex flex-col items-center justify-center
                             p-4 h-24 rounded-sharp border-sharp transition-all duration-200
                             ${borderClass}
                             ${!disabled ? 'active:bg-surface-raised cursor-pointer' : 'cursor-default'}

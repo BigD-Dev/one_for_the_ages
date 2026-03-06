@@ -60,6 +60,7 @@ class GameHistoryEntry(BaseModel):
 class GameHistoryResponse(BaseModel):
     games: List[GameHistoryEntry]
     total_games: int
+    has_more: bool = False
 
 
 # ────────────────────────────────────────────────
@@ -220,4 +221,5 @@ async def get_game_history(
     return GameHistoryResponse(
         games=games,
         total_games=int(total_df.iloc[0]['cnt']) if not total_df.empty else 0,
+        has_more=len(games) == limit,
     )

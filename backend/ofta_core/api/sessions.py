@@ -3,14 +3,18 @@
 Game session endpoints for OFTA
 """
 
+import os
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Any
 from datetime import datetime, date
 import uuid
 
 from ofta_core.utils.firebase_auth import get_current_user
 from ofta_core.utils.util_db import get_db_connector
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -47,10 +51,10 @@ class SessionResponse(BaseModel):
 
 class SubmitAnswerRequest(BaseModel):
     question_template_id: str
-    question_index: int
+    question_index: int = Field(..., ge=0, le=50)
     user_answer: Any
-    response_time_ms: int
-    hints_used: int = 0
+    response_time_ms: int = Field(..., ge=0, le=300000)
+    hints_used: int = Field(default=0, ge=0, le=3)
 
 
 class AnswerResponse(BaseModel):
@@ -58,6 +62,7 @@ class AnswerResponse(BaseModel):
     score_awarded: int
     correct_answer: Any
     error_value: Optional[float] = None
+    streak_bonus: Optional[float] = None
 
 
 class EndSessionResponse(BaseModel):
@@ -86,8 +91,10 @@ async def start_session(
     """
     db = get_db_connector()
     
-    # 🚨 DEV MOCK
+    # Dev mock - only in development environment
     if current_user.get("firebase_uid") == "dev_user_123":
+        if os.getenv("ENVIRONMENT") != "development":
+            raise HTTPException(status_code=403, detail="Dev users not allowed in this environment")
         questions = []
         for i in range(10):
             questions.append(QuestionResponse(
@@ -102,7 +109,7 @@ async def start_session(
                 celebrity_id_b="celeb_b",
                 options=[28, 32, 35, 39]
             ))
-            
+
         return SessionResponse(
             id="dev_session_123",
             mode=request.mode,
@@ -316,7 +323,14 @@ async def submit_answer(
         )
     
     mode = session_df.iloc[0]['mode']
-    
+
+    # Anti-cheat: flag suspiciously fast responses
+    if request.response_time_ms < 200:
+        logger.warning(
+            f"Suspiciously fast answer: {request.response_time_ms}ms "
+            f"from session {session_id}, question {request.question_index}"
+        )
+
     # Get question and celebrity data
     question_df = db.select_df(
         """
@@ -414,6 +428,37 @@ async def submit_answer(
         score_awarded = 50 if is_correct else 0
         correct_answer = {"year": correct_year}
     
+    # Calculate current streak from prior attempts in this session
+    streak_df = db.select_df(
+        """
+        SELECT is_correct
+        FROM da_prod.ofta_question_attempt
+        WHERE session_id = :session_id
+        ORDER BY question_index DESC
+        """,
+        params={"session_id": session_id}
+    )
+    current_streak = 0
+    for _, attempt_row in streak_df.iterrows():
+        if attempt_row['is_correct']:
+            current_streak += 1
+        else:
+            break
+
+    # Apply streak bonus multiplier
+    streak_bonus = 1.0
+    if is_correct:
+        current_streak += 1  # Include the current correct answer
+        if current_streak >= 10:
+            streak_bonus = 2.0
+        elif current_streak >= 5:
+            streak_bonus = 1.5
+        elif current_streak >= 3:
+            streak_bonus = 1.2
+
+        if streak_bonus > 1.0:
+            score_awarded = int(score_awarded * streak_bonus)
+
     # Record attempt
     db.execute_query(
         """
@@ -421,12 +466,12 @@ async def submit_answer(
             session_id, question_template_id, question_index,
             shown_at, answered_at, response_time_ms,
             user_answer, is_correct, error_value,
-            hints_used, score_awarded
+            hints_used, score_awarded, streak_at_time
         ) VALUES (
             :session_id, :question_template_id, :question_index,
             NOW(), NOW(), :response_time_ms,
             :user_answer::jsonb, :is_correct, :error_value,
-            :hints_used, :score_awarded
+            :hints_used, :score_awarded, :streak_at_time
         )
         """,
         params={
@@ -439,14 +484,16 @@ async def submit_answer(
             "error_value": error_value,
             "hints_used": request.hints_used,
             "score_awarded": score_awarded,
+            "streak_at_time": current_streak,
         }
     )
-    
+
     return AnswerResponse(
         is_correct=is_correct,
         score_awarded=score_awarded,
         correct_answer=correct_answer,
-        error_value=error_value
+        error_value=error_value,
+        streak_bonus=streak_bonus if streak_bonus > 1.0 else None,
     )
 
 

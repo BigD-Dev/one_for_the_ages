@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ResultConfetti } from '@/components/game/ResultConfetti'
 import { Medal, Share2, Target, Calendar, BarChart3, Home } from 'lucide-react'
+import { logger } from '@/lib/logger'
 
 export default function ResultsPage() {
     const router = useRouter()
@@ -67,7 +68,7 @@ export default function ResultsPage() {
                     url: window.location.origin
                 })
             } catch (err) {
-                console.log('Error sharing:', err)
+                logger.warn('Error sharing:', err)
             }
         } else {
             // Fallback: Copy to clipboard

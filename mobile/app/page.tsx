@@ -8,17 +8,28 @@ import { Hourglass, Scale, Star, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
+import { calculateLevel } from '@/lib/xp'
+import { logger } from '@/lib/logger'
+
+interface UserStats {
+    lifetime_score: number
+    best_streak: number
+    games_played: number
+    accuracy_pct: number
+    current_streak: number
+}
 
 export default function Home() {
     const { user: authUser, isAuthenticated, setUser, setOftaUser } = useAuthStore()
     const [currentTime, setCurrentTime] = useState(new Date())
     const [timeLeft, setTimeLeft] = useState('')
+    const [stats, setStats] = useState<UserStats | null>(null)
 
     // Dev Auto-Login Logic
     useEffect(() => {
         const performDevLogin = async () => {
             if (!isAuthenticated && process.env.NODE_ENV === 'development') {
-                console.log(' performing dev auto-login...')
+                logger.info('performing dev auto-login...')
                 const devUser = {
                     uid: 'dev_user_123',
                     email: 'dev@ofta.com',
@@ -54,15 +65,21 @@ export default function Home() {
                         auth_provider: 'email',
                     })
                     setOftaUser(oftaUser)
-                    console.log('✅ Dev user logged in & registered:', oftaUser)
+                    logger.info('Dev user logged in & registered:', oftaUser)
                 } catch (error) {
-                    console.error('❌ Dev login failed:', error)
+                    logger.error('Dev login failed:', error)
                 }
             }
         }
 
         performDevLogin()
     }, [isAuthenticated, setUser, setOftaUser])
+
+    useEffect(() => {
+        if (isAuthenticated) {
+            apiClient.getUserStats().then(setStats).catch((err) => logger.warn('Failed to load stats:', err))
+        }
+    }, [isAuthenticated])
 
     // 1. Time-based greeting logic
     const getGreeting = () => {
@@ -96,14 +113,13 @@ export default function Home() {
     }, [])
 
 
-    // Mock User Data
+    const levelInfo = calculateLevel(stats?.lifetime_score || 0)
     const user = {
-        name: authUser?.displayName || 'Diran',
-        level: 12,
-        streak: 7,
-        accuracy: 71,
-        bestScore: 820,
-        rank: '#1,245'
+        name: authUser?.displayName || 'Player',
+        level: levelInfo.level,
+        streak: stats?.current_streak || 0,
+        accuracy: stats ? Math.round(stats.accuracy_pct) : 0,
+        bestScore: stats?.lifetime_score || 0,
     }
 
     return (
@@ -195,8 +211,8 @@ export default function Home() {
                     </div>
                     <div className="w-[1px] h-8 bg-border-subtle" />
                     <div className="space-y-1">
-                        <p className="font-sans text-[10px] text-text-muted uppercase tracking-widest">Rank</p>
-                        <p className="font-serif text-lg text-gold">{user.rank}</p>
+                        <p className="font-sans text-[10px] text-text-muted uppercase tracking-widest">Streak</p>
+                        <p className="font-serif text-lg text-gold">{user.streak}</p>
                     </div>
                 </section>
 

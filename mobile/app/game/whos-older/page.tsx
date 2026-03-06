@@ -8,6 +8,7 @@ import { GameLoadingSkeleton } from '@/components/ui/SkeletonLoader'
 import { useGameStore } from '@/store/useGameStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
+import { logger } from '@/lib/logger'
 import { Haptics, ImpactStyle } from '@capacitor/haptics'
 import { ArrowLeft, Clock, Info, Pause, Play, CheckCircle, X } from 'lucide-react'
 
@@ -62,7 +63,7 @@ export default function WhosOlderPage() {
                 setIsLoading(false)
                 startTimer()
             } catch (error) {
-                console.error('Failed to start game:', error)
+                logger.error('Failed to start game:', error)
                 router.push('/')
             }
         }
@@ -151,7 +152,7 @@ export default function WhosOlderPage() {
             setTimeout(handleNext, 1200)
 
         } catch (error) {
-            console.error('Failed to submit:', error)
+            logger.error('Failed to submit:', error)
             handleNext()
         } finally {
             setIsSubmitting(false)
@@ -176,7 +177,7 @@ export default function WhosOlderPage() {
             endGame()
             router.push('/game/results')
         } catch (error) {
-            console.error('Failed to end:', error)
+            logger.error('Failed to end:', error)
             router.push('/game/results')
         }
     }

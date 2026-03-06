@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '@/lib/firebase'
+import { logger } from '@/lib/logger'
 
 export default function Splash() {
     const router = useRouter()
@@ -26,7 +27,7 @@ export default function Splash() {
 
         // Timeout/Failsafe: Force redirect after 3s if nothing happens
         const timeoutId = setTimeout(() => {
-            console.warn("Splash timeout reached, redirecting to welcome")
+            logger.warn("Splash timeout reached, redirecting to welcome")
             router.push('/welcome')
         }, 3000)
 

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useGameStore } from '@/store/useGameStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
+import { logger } from '@/lib/logger'
 import { CelebrityImage } from '@/components/ui/CelebrityImage'
 import { Card } from '@/components/ui/Card'
 import { GameLoadingSkeleton } from '@/components/ui/SkeletonLoader'
@@ -69,7 +70,7 @@ export default function ReverseModePage() {
                 startGame(session.id, requestedMode, session.questions)
                 setIsLoading(false)
             } catch (error) {
-                console.error('Failed to start game:', error)
+                logger.error('Failed to start game:', error)
                 router.push('/')
             }
         }
@@ -139,7 +140,7 @@ export default function ReverseModePage() {
                 }
             }, 1500) // 1s + some buffer
         } catch (error) {
-            console.error('Failed to submit:', error)
+            logger.error('Failed to submit:', error)
         }
     }
 
@@ -149,7 +150,7 @@ export default function ReverseModePage() {
             endGame(result)
             router.push('/game/results')
         } catch (error) {
-            console.error('Failed to end game:', error)
+            logger.error('Failed to end game:', error)
         }
     }
 

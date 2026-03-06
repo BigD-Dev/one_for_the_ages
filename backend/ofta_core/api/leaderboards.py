@@ -57,6 +57,7 @@ class AllTimeLeaderboardResponse(BaseModel):
 async def get_daily_leaderboard(
     pack_date: str,
     limit: int = 100,
+    offset: int = 0,
     current_user: Optional[dict] = Depends(get_optional_user)
 ):
     """Get the daily leaderboard for a specific date."""
@@ -83,9 +84,9 @@ async def get_daily_leaderboard(
         JOIN da_prod.ofta_user_account ua ON lb.user_id = ua.id
         WHERE lb.pack_date = :pack_date
         ORDER BY lb.score DESC
-        LIMIT :limit
+        LIMIT :limit OFFSET :offset
         """,
-        params={"pack_date": target_date, "limit": limit}
+        params={"pack_date": target_date, "limit": limit, "offset": offset}
     )
 
     current_uid = current_user["firebase_uid"] if current_user else None
@@ -127,6 +128,7 @@ async def get_daily_leaderboard(
 @router.get("/all-time", response_model=AllTimeLeaderboardResponse)
 async def get_all_time_leaderboard(
     limit: int = 100,
+    offset: int = 0,
     current_user: Optional[dict] = Depends(get_optional_user)
 ):
     """Get the all-time leaderboard based on lifetime scores."""
@@ -146,9 +148,9 @@ async def get_all_time_leaderboard(
         JOIN da_prod.ofta_user_account ua ON us.user_id = ua.id
         WHERE us.games_played > 0
         ORDER BY us.lifetime_score DESC
-        LIMIT :limit
+        LIMIT :limit OFFSET :offset
         """,
-        params={"limit": limit}
+        params={"limit": limit, "offset": offset}
     )
 
     current_uid = current_user["firebase_uid"] if current_user else None

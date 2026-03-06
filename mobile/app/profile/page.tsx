@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
+import { calculateLevel } from '@/lib/xp'
+import { logger } from '@/lib/logger'
 import { AppShell } from '@/components/ui/Layout'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -54,7 +56,7 @@ export default function ProfilePage() {
             const statsData = await apiClient.getUserStats().catch(() => null)
             setStats(statsData)
         } catch (error) {
-            console.error('Failed to load profile:', error)
+            logger.error('Failed to load profile:', error)
         } finally {
             setIsLoading(false)
         }
@@ -71,6 +73,17 @@ export default function ProfilePage() {
         router.push('/')
     }
 
+    const handleDeleteAccount = async () => {
+        if (!confirm('Are you sure? This will permanently delete your account and all data.')) return
+        try {
+            await apiClient.deleteAccount()
+            logout()
+            router.push('/')
+        } catch (error) {
+            logger.error('Failed to delete account:', error)
+        }
+    }
+
     if (isLoading) {
         return (
             <AppShell className="flex items-center justify-center min-h-screen">
@@ -80,13 +93,8 @@ export default function ProfilePage() {
     }
 
     // Derived Stats
-    const totalScore = stats?.lifetime_score || 0
-    const level = Math.floor(totalScore / 1000) + 1
-    const currentXP = totalScore % 1000
-    const nextLevelXP = 1000
+    const levelInfo = calculateLevel(stats?.lifetime_score || 0)
     const accuracy = stats?.accuracy_pct ? Math.round(stats.accuracy_pct) : 0
-    // Mock win rate for now as accuracy
-    const winRate = accuracy
 
     return (
         <AppShell className="bg-canvas pb-24 px-6 pt-6 font-sans">
@@ -118,13 +126,13 @@ export default function ProfilePage() {
                 </h2>
                 <div className="flex flex-col items-center w-full max-w-[200px] gap-2">
                     <p className="text-xs text-primary tracking-widest uppercase font-bold">
-                        Level {level}
+                        Level {levelInfo.level} · {levelInfo.title}
                     </p>
                     <div className="w-full">
-                        <ProgressBar value={currentXP} max={nextLevelXP} color="bg-primary" />
+                        <ProgressBar value={levelInfo.currentXP} max={levelInfo.xpForNextLevel} color="bg-primary" />
                         <div className="flex justify-between mt-1 text-[9px] text-text-muted font-mono">
-                            <span>{currentXP} XP</span>
-                            <span>{nextLevelXP} XP</span>
+                            <span>{levelInfo.currentXP} XP</span>
+                            <span>{levelInfo.xpForNextLevel} XP</span>
                         </div>
                     </div>
                 </div>
@@ -134,11 +142,11 @@ export default function ProfilePage() {
             <Card className="p-0 border-border-subtle bg-surface-raised overflow-hidden mb-6">
                 <div className="grid grid-cols-2 divide-x divide-border-subtle">
                     <StatBox label="Avg. Score" value={stats?.lifetime_score ? Math.round(stats.lifetime_score / (stats.games_played || 1)).toString() : "0"} />
-                    <StatBox label="Accuracy" value={`${winRate}%`} color="text-green-400" />
+                    <StatBox label="Accuracy" value={`${accuracy}%`} color="text-green-400" />
                 </div>
                 <div className="border-t border-border-subtle grid grid-cols-2 divide-x divide-border-subtle">
-                    <StatBox label="Best Score" value={stats?.lifetime_score ? "N/A" : "0"} /> {/* Need Best Score in API */}
-                    <StatBox label="Games Played" value={stats?.games_played.toString() || "0"} />
+                    <StatBox label="Best Streak" value={(stats?.best_streak || 0).toString()} />
+                    <StatBox label="Games Played" value={(stats?.games_played || 0).toString()} />
                 </div>
             </Card>
 
@@ -196,7 +204,10 @@ export default function ProfilePage() {
                     Log Out
                 </button>
                 <div className="flex justify-center">
-                    <button className="text-xs text-red-400/70 hover:text-red-400 transition-colors uppercase tracking-widest py-2">
+                    <button
+                        onClick={handleDeleteAccount}
+                        className="text-xs text-red-400/70 hover:text-red-400 transition-colors uppercase tracking-widest py-2"
+                    >
                         Delete Account
                     </button>
                 </div>

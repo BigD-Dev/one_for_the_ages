@@ -5,13 +5,43 @@
 const API_BASE = 'http://localhost:8080'
 
 // ────────────────────────────────────────────────
+// API Key Management
+// ────────────────────────────────────────────────
+
+function getApiKey() {
+    return localStorage.getItem('ofta_admin_api_key') || ''
+}
+
+function saveApiKey(key) {
+    localStorage.setItem('ofta_admin_api_key', key)
+}
+
+function initApiKeyBar() {
+    const input = document.getElementById('api-key-input')
+    if (!input) return
+    input.value = getApiKey()
+    input.addEventListener('change', () => {
+        saveApiKey(input.value.trim())
+    })
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            saveApiKey(input.value.trim())
+            input.blur()
+        }
+    })
+}
+
+
+// ────────────────────────────────────────────────
 // API Helper
 // ────────────────────────────────────────────────
 
 async function api(endpoint, options = {}) {
     try {
+        const key = getApiKey()
+        const authHeaders = key ? { 'X-Admin-Key': key } : {}
         const res = await fetch(`${API_BASE}${endpoint}`, {
-            headers: { 'Content-Type': 'application/json', ...options.headers },
+            headers: { 'Content-Type': 'application/json', ...authHeaders, ...options.headers },
             ...options,
         })
         if (!res.ok) throw new Error(`API Error: ${res.status}`)
@@ -34,6 +64,7 @@ const pages = {
     users: renderUsers,
     leaderboard: renderLeaderboard,
     config: renderConfig,
+    analytics: renderAnalytics,
 }
 
 function navigateTo(page) {
@@ -50,6 +81,7 @@ function navigateTo(page) {
         users: '👥 User Management',
         leaderboard: '🏆 Leaderboard',
         config: '⚙️ App Configuration',
+        analytics: '📈 Analytics',
     }
     document.getElementById('page-title').textContent = titles[page] || page
 
@@ -113,6 +145,7 @@ async function renderDashboard() {
                 <button class="btn btn-primary" onclick="navigateTo('questions')">❓ Manage Questions</button>
                 <button class="btn btn-secondary" onclick="navigateTo('users')">👥 View Users</button>
                 <button class="btn btn-secondary" onclick="navigateTo('leaderboard')">🏆 Leaderboard</button>
+                <button class="btn btn-secondary" onclick="navigateTo('analytics')">📈 Analytics</button>
             </div>
         </div>
 
@@ -135,6 +168,94 @@ async function renderDashboard() {
 
 
 // ────────────────────────────────────────────────
+// Analytics
+// ────────────────────────────────────────────────
+
+async function renderAnalytics() {
+    const container = document.getElementById('page-container')
+    container.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Loading analytics...</p></div>'
+
+    const [sessionsPerDay, scoreDistribution, activeUsers] = await Promise.all([
+        api('/admin/analytics/sessions-per-day'),
+        api('/admin/analytics/score-distribution'),
+        api('/admin/analytics/active-users'),
+    ])
+
+    // Sessions per day bar chart
+    const days = sessionsPerDay?.days ?? []
+    const maxCount = days.length > 0 ? Math.max(...days.map(d => d.count), 1) : 1
+    const barChartHtml = days.length === 0
+        ? '<p class="analytics-empty">No session data for the last 7 days.</p>'
+        : days.map(d => {
+            const pct = Math.round((d.count / maxCount) * 100)
+            const bar = '█'.repeat(Math.max(1, Math.round(pct / 5))) + ' ' + d.count
+            return `
+                <div class="chart-row">
+                    <span class="chart-label">${d.date}</span>
+                    <span class="chart-bar" style="--bar-pct: ${pct}%">${bar}</span>
+                </div>`
+        }).join('')
+
+    // Score distribution
+    const buckets = scoreDistribution?.distribution ?? []
+    const maxBucketCount = buckets.length > 0 ? Math.max(...buckets.map(b => b.count), 1) : 1
+    const scoreChartHtml = buckets.length === 0
+        ? '<p class="analytics-empty">No score data available.</p>'
+        : buckets.map(b => {
+            const pct = Math.round((b.count / maxBucketCount) * 100)
+            const bar = '█'.repeat(Math.max(1, Math.round(pct / 5))) + ' ' + b.count
+            return `
+                <div class="chart-row">
+                    <span class="chart-label">${b.bracket}</span>
+                    <span class="chart-bar" style="--bar-pct: ${pct}%">${bar}</span>
+                </div>`
+        }).join('')
+
+    const dau = activeUsers?.dau ?? '—'
+    const wau = activeUsers?.wau ?? '—'
+    const mau = activeUsers?.mau ?? '—'
+
+    container.innerHTML = `
+        <!-- Active Users -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <p class="stat-label">Daily Active Users</p>
+                <p class="stat-value">${dau}</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-label">Weekly Active Users</p>
+                <p class="stat-value">${wau}</p>
+            </div>
+            <div class="stat-card">
+                <p class="stat-label">Monthly Active Users</p>
+                <p class="stat-value">${mau}</p>
+            </div>
+        </div>
+
+        <!-- Sessions Per Day -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Sessions Per Day (Last 7 Days)</h3>
+            </div>
+            <div class="analytics-chart">
+                ${barChartHtml}
+            </div>
+        </div>
+
+        <!-- Score Distribution -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Score Distribution</h3>
+            </div>
+            <div class="analytics-chart">
+                ${scoreChartHtml}
+            </div>
+        </div>
+    `
+}
+
+
+// ────────────────────────────────────────────────
 // Celebrities
 // ────────────────────────────────────────────────
 
@@ -149,6 +270,7 @@ async function renderCelebrities() {
         <div class="search-bar">
             <input type="text" class="search-input" id="celeb-search" placeholder="Search celebrities..." oninput="filterCelebrities()">
             <button class="btn btn-primary" onclick="showAddCelebrityModal()">+ Add Celebrity</button>
+            <button class="btn btn-secondary btn-csv-import" onclick="showCsvImportModal()">⬆ Bulk CSV Import</button>
         </div>
 
         <div class="card">
@@ -298,6 +420,136 @@ async function submitNewCelebrity() {
 
     await api('/admin/celebrities', { method: 'POST', body: JSON.stringify(payload) })
     document.querySelector('.modal-overlay').remove()
+    renderCelebrities()
+}
+
+
+// ────────────────────────────────────────────────
+// CSV Import
+// ────────────────────────────────────────────────
+
+function showCsvImportModal() {
+    const overlay = document.createElement('div')
+    overlay.className = 'modal-overlay active'
+    overlay.innerHTML = `
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Bulk CSV Import</h3>
+                <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+                    Upload a CSV file with the following columns (in order):<br>
+                    <code>full_name, date_of_birth, star_sign, primary_category, nationality, gender, popularity_score, hints_easy, hints_medium, hints_hard</code>
+                </p>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+                    Hints columns should contain JSON arrays, e.g. <code>["Hint 1","Hint 2"]</code>
+                </p>
+                <div class="form-group">
+                    <label class="form-label">CSV File</label>
+                    <input class="form-input" id="csv-file-input" type="file" accept=".csv">
+                </div>
+                <div id="csv-preview" style="margin-top: 8px; font-size: 12px; color: var(--text-muted);"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="this.closest('.modal-overlay').remove()">Cancel</button>
+                <button class="btn btn-primary btn-csv-import" onclick="submitCsvImport()">Import</button>
+            </div>
+        </div>
+    `
+    document.body.appendChild(overlay)
+
+    document.getElementById('csv-file-input').addEventListener('change', previewCsv)
+}
+
+function parseCsvLine(line) {
+    const result = []
+    let current = ''
+    let inQuotes = false
+    for (let i = 0; i < line.length; i++) {
+        const ch = line[i]
+        if (ch === '"') {
+            inQuotes = !inQuotes
+        } else if (ch === ',' && !inQuotes) {
+            result.push(current.trim())
+            current = ''
+        } else {
+            current += ch
+        }
+    }
+    result.push(current.trim())
+    return result
+}
+
+function previewCsv() {
+    const file = document.getElementById('csv-file-input').files[0]
+    const preview = document.getElementById('csv-preview')
+    if (!file) { preview.textContent = ''; return }
+    const reader = new FileReader()
+    reader.onload = (e) => {
+        const lines = e.target.result.split('\n').filter(l => l.trim())
+        preview.textContent = `${lines.length} row(s) detected (including header if present).`
+    }
+    reader.readAsText(file)
+}
+
+async function submitCsvImport() {
+    const file = document.getElementById('csv-file-input').files[0]
+    if (!file) { alert('Please select a CSV file.'); return }
+
+    const text = await file.text()
+    const lines = text.split('\n').filter(l => l.trim())
+
+    // Auto-detect header row
+    const firstCols = parseCsvLine(lines[0])
+    const hasHeader = firstCols[0].toLowerCase().includes('name') || firstCols[0].toLowerCase().includes('full')
+    const dataLines = hasHeader ? lines.slice(1) : lines
+
+    const celebrities = []
+    for (const line of dataLines) {
+        const cols = parseCsvLine(line)
+        if (cols.length < 4) continue
+        const [full_name, date_of_birth, star_sign, primary_category, nationality, gender, popularity_score_raw, hints_easy_raw, hints_medium_raw, hints_hard_raw] = cols
+
+        let hints_easy = []
+        let hints_medium = []
+        let hints_hard = []
+        try { hints_easy = hints_easy_raw ? JSON.parse(hints_easy_raw) : [] } catch { hints_easy = hints_easy_raw ? [hints_easy_raw] : [] }
+        try { hints_medium = hints_medium_raw ? JSON.parse(hints_medium_raw) : [] } catch { hints_medium = hints_medium_raw ? [hints_medium_raw] : [] }
+        try { hints_hard = hints_hard_raw ? JSON.parse(hints_hard_raw) : [] } catch { hints_hard = hints_hard_raw ? [hints_hard_raw] : [] }
+
+        celebrities.push({
+            full_name,
+            date_of_birth,
+            star_sign,
+            primary_category,
+            nationality: nationality || null,
+            gender: gender || null,
+            popularity_score: parseFloat(popularity_score_raw) || 50,
+            hints_easy,
+            hints_medium,
+            hints_hard,
+        })
+    }
+
+    if (celebrities.length === 0) {
+        alert('No valid rows found in CSV.')
+        return
+    }
+
+    const result = await api('/admin/celebrities/bulk-import', {
+        method: 'POST',
+        body: JSON.stringify(celebrities),
+    })
+
+    document.querySelector('.modal-overlay').remove()
+
+    if (result) {
+        alert(`Import complete: ${result.created} created, ${result.errors?.length ?? 0} errors.`)
+    } else {
+        alert('Import failed. Check the console for details.')
+    }
+
     renderCelebrities()
 }
 
@@ -574,6 +826,9 @@ function formatDate(dateStr) {
 // ────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Init API key bar
+    initApiKeyBar()
+
     // Nav click handlers
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', (e) => {

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { getCachedCelebrityImage, preloadImage } from '@/lib/image-service'
 import { ImagePlaceholder } from './ImagePlaceholder'
+import { logger } from '@/lib/logger'
 
 interface EnhancedCelebrityImageProps {
     name: string
@@ -81,7 +82,7 @@ export const EnhancedCelebrityImage = ({
                 setImageUrl(celebrityImage.url)
                 setImageState('loaded')
             } catch (error) {
-                console.warn(`Failed to load image for ${name}:`, error)
+                logger.warn(`Failed to load image for ${name}:`, error)
                 setImageState('error')
             }
         }

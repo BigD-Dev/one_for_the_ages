@@ -4,7 +4,7 @@ Telemetry / analytics endpoints for OFTA
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
 
@@ -25,9 +25,16 @@ class TelemetryEvent(BaseModel):
     device_os: Optional[str] = None
     app_version: Optional[str] = None
 
+    @field_validator('event_data')
+    @classmethod
+    def validate_event_data_size(cls, v):
+        if v and len(v) > 50:
+            raise ValueError('event_data must not exceed 50 keys')
+        return v
+
 
 class BatchEventsRequest(BaseModel):
-    events: List[TelemetryEvent]
+    events: List[TelemetryEvent] = Field(..., max_length=10)
 
 
 # ────────────────────────────────────────────────

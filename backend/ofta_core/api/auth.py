@@ -3,11 +3,13 @@
 Authentication endpoints for OFTA
 """
 
+import os
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
 import uuid
+import hashlib
 
 from ofta_core.utils.firebase_auth import get_current_user, verify_firebase_token
 from ofta_core.utils.util_db import get_db_connector
@@ -55,8 +57,13 @@ async def register_user(
     """
     db = get_db_connector()
     
-    # 🚨 DEV MOCK
-    if request.firebase_uid == "dev_user_123" or current_user.get("firebase_uid") == "dev_user_123":
+    # Dev mock - only in development environment
+    if (request.firebase_uid == "dev_user_123" or current_user.get("firebase_uid") == "dev_user_123"):
+        if os.getenv("ENVIRONMENT") != "development":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Dev users not allowed in this environment"
+            )
         return UserResponse(
             id="dev_user_id_123",
             firebase_uid="dev_user_123",
@@ -220,18 +227,30 @@ async def delete_user_account(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Delete current user's account (soft delete - mark as banned).
-    For GDPR compliance, implement hard delete separately.
+    Delete current user's account.
+    Anonymizes PII for GDPR compliance while preserving referential integrity.
     """
     db = get_db_connector()
-    
+
+    # Generate anonymized identifier
+    anon_hash = hashlib.sha256(
+        f"{current_user['firebase_uid']}:{datetime.utcnow().isoformat()}".encode()
+    ).hexdigest()[:16]
+
     db.execute_query(
         """
         UPDATE da_prod.ofta_user_account
-        SET is_banned = TRUE, updated_at = NOW()
+        SET display_name = 'Deleted User',
+            email = NULL,
+            firebase_uid = :anon_uid,
+            is_banned = TRUE,
+            updated_at = NOW()
         WHERE firebase_uid = :firebase_uid
         """,
-        params={"firebase_uid": current_user["firebase_uid"]}
+        params={
+            "firebase_uid": current_user["firebase_uid"],
+            "anon_uid": f"deleted_{anon_hash}",
+        }
     )
-    
+
     return None

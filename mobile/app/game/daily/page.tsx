@@ -10,6 +10,7 @@ import { GameLoadingSkeleton } from '@/components/ui/SkeletonLoader'
 import { useGameStore } from '@/store/useGameStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
+import { logger } from '@/lib/logger'
 import { Lightbulb, ArrowLeft, Clock, Flame, ArrowRight } from 'lucide-react'
 
 export default function DailyChallengePage() {
@@ -81,7 +82,7 @@ export default function DailyChallengePage() {
                 }
                 setIsLoading(false)
             } catch (error) {
-                console.error('Failed to load lobby data:', error)
+                logger.error('Failed to load lobby data:', error)
                 // Fallback to avoid getting stuck
                 setIsLoading(false)
             }
@@ -125,7 +126,7 @@ export default function DailyChallengePage() {
             setIsGameStarted(true)
             setIsLoading(false)
         } catch (error) {
-            console.error('Failed to start daily:', error)
+            logger.error('Failed to start daily:', error)
             setIsLoading(false)
         }
     }
@@ -170,7 +171,7 @@ export default function DailyChallengePage() {
                 }
             }, 1500)
         } catch (error) {
-            console.error('Failed to submit:', error)
+            logger.error('Failed to submit:', error)
             setFeedback('Failed to submit.')
         }
     }
@@ -182,7 +183,7 @@ export default function DailyChallengePage() {
             endGame()
             router.push('/game/results')
         } catch (error) {
-            console.error('Failed to end:', error)
+            logger.error('Failed to end:', error)
             router.push('/game/results')
         }
     }

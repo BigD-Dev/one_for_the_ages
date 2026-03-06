@@ -74,8 +74,15 @@ async def verify_firebase_token(
     """
     token = credentials.credentials
     
-    # 🚨 DEV BACKDOOR
+    # Dev backdoor - only available in development environment
     if token == "DEV_TOKEN_123":
+        if os.getenv("ENVIRONMENT") != "development":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Dev tokens are not accepted in this environment",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        logger.warning("Dev backdoor token used - this should never appear in production")
         return {
             "uid": "dev_user_123",
             "email": "dev@ofta.com",

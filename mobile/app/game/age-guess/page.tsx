@@ -12,6 +12,7 @@ import { OptionsGrid } from '@/components/game/OptionsGrid'
 import { useGameStore } from '@/store/useGameStore'
 import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
+import { logger } from '@/lib/logger'
 import { Haptics, ImpactStyle } from '@capacitor/haptics'
 import { ArrowLeft, Clock, Info, Pause, Play, X, CheckCircle, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
@@ -61,7 +62,7 @@ export default function AgeGuessPage() {
                 startGame(session.id, 'AGE_GUESS', session.questions)
                 setIsLoading(false)
             } catch (error) {
-                console.error('Failed to start game:', error)
+                logger.error('Failed to start game:', error)
                 router.push('/')
             }
         }
@@ -121,7 +122,7 @@ export default function AgeGuessPage() {
             submitAnswer(result.is_correct, result.score_awarded)
 
         } catch (error) {
-            console.error('Failed to submit:', error)
+            logger.error('Failed to submit:', error)
         } finally {
             setIsSubmitting(false)
         }
@@ -146,7 +147,7 @@ export default function AgeGuessPage() {
             endGame(result)
             router.push('/game/results')
         } catch (error) {
-            console.error('Failed to end:', error)
+            logger.error('Failed to end:', error)
             router.push('/game/results')
         }
     }

@@ -103,7 +103,7 @@ class APIClient {
     async submitAnswer(sessionId: string, payload: {
         question_template_id: string
         question_index: number
-        user_answer: any
+        user_answer: string | number | boolean
         response_time_ms: number
         hints_used: number
     }) {
@@ -187,7 +187,7 @@ class APIClient {
 
     async logEvent(payload: {
         event_type: string
-        event_data?: any
+        event_data?: Record<string, unknown>
         client_ts?: string
     }) {
         // Fire and forget

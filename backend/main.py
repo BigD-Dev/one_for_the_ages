@@ -18,6 +18,12 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 from starlette.datastructures import State
 
+from ofta_core.utils.logger import setup_logging, get_logger
+
+# Initialize structured logging before anything else
+setup_logging()
+logger = get_logger(__name__)
+
 # ───────────────────────────
 #  Docs HTTP-Basic guard
 # ───────────────────────────
@@ -30,7 +36,7 @@ def _docs_guard(creds: HTTPBasicCredentials = Depends(security)) -> None:
     """Gate Swagger / ReDoc behind HTTP Basic auth."""
     if not DOCS_USER or not DOCS_PASS:
         return None
-    
+
     if not (
         secrets.compare_digest(creds.username, DOCS_USER)
         and secrets.compare_digest(creds.password, DOCS_PASS)
@@ -57,9 +63,9 @@ app = FastAPI(
 app.state = cast(State, app.state)
 
 # ───────────────────────────
-#  CORS
+#  CORS (configurable via env)
 # ───────────────────────────
-TRUSTED_ORIGINS = [
+_default_origins = [
     "http://localhost:3000",
     "http://localhost:3001",
     "http://localhost:3002",
@@ -67,6 +73,9 @@ TRUSTED_ORIGINS = [
     "capacitor://localhost",
     "http://localhost",
 ]
+
+TRUSTED_ORIGINS = os.getenv("CORS_ORIGINS", "").split(",") if os.getenv("CORS_ORIGINS") else _default_origins
+TRUSTED_ORIGINS = [o.strip() for o in TRUSTED_ORIGINS if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
@@ -80,14 +89,25 @@ app.add_middleware(
 # ───────────────────────────
 #  Secure headers middleware
 # ───────────────────────────
-# @app.middleware("http")
-# async def secure_headers(request: Request, call_next):
-#     resp = await call_next(request)
-#     resp.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
-#     resp.headers["X-Content-Type-Options"] = "nosniff"
-#     resp.headers["X-Frame-Options"] = "DENY"
-#     resp.headers["Referrer-Policy"] = "same-origin"
-#     return resp
+@app.middleware("http")
+async def secure_headers(request: Request, call_next):
+    resp = await call_next(request)
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["X-Frame-Options"] = "DENY"
+    resp.headers["Referrer-Policy"] = "same-origin"
+    if os.getenv("ENVIRONMENT") != "development":
+        resp.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"
+    return resp
+
+
+# ───────────────────────────
+#  Rate limiting (TODO)
+# ───────────────────────────
+# TODO: Add rate limiting with slowapi or similar
+# from slowapi import Limiter
+# limiter = Limiter(key_func=get_remote_address)
+# app.state.limiter = limiter
+# Apply @limiter.limit("10/minute") to sensitive endpoints
 
 
 # ───────────────────────────
@@ -112,22 +132,17 @@ app.include_router(telemetry_router, prefix="/v1/telemetry", tags=["Telemetry"])
 app.include_router(admin_router, prefix="/admin", tags=["Admin"])
 
 
-
-
 # ───────────────────────────
 #  Startup / shutdown
 # ───────────────────────────
 @app.on_event("startup")
 def on_startup() -> None:
-    print("🚀 OFTA API starting up...")
-    # Database connector will be initialized lazily
-    # Start monitoring, etc.
+    logger.info("OFTA API starting up...")
 
 
 @app.on_event("shutdown")
 def on_shutdown() -> None:
-    print("👋 OFTA API shutting down...")
-    # Close database connections, etc.
+    logger.info("OFTA API shutting down...")
 
 
 # ───────────────────────────
@@ -144,9 +159,25 @@ def root():
 
 @app.get("/health", tags=["Health"])
 def health():
+    """Deep health check with database connectivity."""
+    from ofta_core.utils.util_db import get_db_connector
+    try:
+        db = get_db_connector()
+        pool_status = db.get_pool_status()
+        db_healthy = True
+    except Exception:
+        pool_status = {}
+        db_healthy = False
+
     return {
-        "status": "healthy",
-        "timestamp": datetime.utcnow().isoformat()
+        "status": "healthy" if db_healthy else "degraded",
+        "timestamp": datetime.utcnow().isoformat(),
+        "database": {
+            "connected": db_healthy,
+            "pool": pool_status,
+        },
+        "version": "0.0.1",
+        "environment": os.getenv("ENVIRONMENT", "development"),
     }
 
 
@@ -155,7 +186,7 @@ def health():
 # ───────────────────────────
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8081"))
-    print(f"Starting OFTA API on http://0.0.0.0:{port}")
+    logger.info(f"Starting OFTA API on http://0.0.0.0:{port}")
     uvicorn.run(
         app,
         host="0.0.0.0",
