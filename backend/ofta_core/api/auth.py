@@ -53,8 +53,8 @@ class UserResponse(BaseModel):
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("20/minute")
 async def register_user(
-    _http_request: Request,
-    request: RegisterRequest,
+    request: Request,
+    body: RegisterRequest,
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -64,7 +64,7 @@ async def register_user(
     db = get_db_connector()
     
     # Dev mock - only in development environment
-    if (request.firebase_uid == "dev_user_123" or current_user.get("firebase_uid") == "dev_user_123"):
+    if (body.firebase_uid == "dev_user_123" or current_user.get("firebase_uid") == "dev_user_123"):
         if os.getenv("ENVIRONMENT") != "development":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -83,7 +83,7 @@ async def register_user(
         )
     
     # Verify the firebase_uid matches the authenticated user
-    if request.firebase_uid != current_user["firebase_uid"]:
+    if body.firebase_uid != current_user["firebase_uid"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Firebase UID mismatch"
@@ -95,7 +95,7 @@ async def register_user(
         SELECT * FROM da_prod.ofta_user_account
         WHERE firebase_uid = :firebase_uid
         """,
-        params={"firebase_uid": request.firebase_uid}
+        params={"firebase_uid": body.firebase_uid}
     )
     
     if not existing_user.empty:
@@ -106,7 +106,7 @@ async def register_user(
             SET last_active_at = NOW()
             WHERE firebase_uid = :firebase_uid
             """,
-            params={"firebase_uid": request.firebase_uid}
+            params={"firebase_uid": body.firebase_uid}
         )
         
         user = existing_user.iloc[0].to_dict()
@@ -128,12 +128,12 @@ async def register_user(
         """,
         params={
             "id": user_id,
-            "firebase_uid": request.firebase_uid,
-            "display_name": request.display_name,
-            "email": request.email,
-            "country": request.country,
-            "device_os": request.device_os,
-            "auth_provider": request.auth_provider,
+            "firebase_uid": body.firebase_uid,
+            "display_name": body.display_name,
+            "email": body.email,
+            "country": body.country,
+            "device_os": body.device_os,
+            "auth_provider": body.auth_provider,
         }
     )
     

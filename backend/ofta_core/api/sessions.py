@@ -87,8 +87,8 @@ class EndSessionResponse(BaseModel):
 @router.post("/start", response_model=SessionResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("30/minute")
 async def start_session(
-    _http_request: Request,
-    request: StartSessionRequest,
+    request: Request,
+    body: StartSessionRequest,
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -105,7 +105,7 @@ async def start_session(
         for i in range(10):
             questions.append(QuestionResponse(
                 id=f"q_{i}",
-                mode=request.mode,
+                mode=body.mode,
                 difficulty=1,
                 celebrity_name="Celebrity A",
                 celebrity_id="celeb_a",
@@ -118,7 +118,7 @@ async def start_session(
 
         return SessionResponse(
             id="dev_session_123",
-            mode=request.mode,
+            mode=body.mode,
             questions=questions,
             started_at=datetime.utcnow()
         )
@@ -141,7 +141,7 @@ async def start_session(
     # Generate questions (simplified for MVP - fetch random active questions)
     num_questions = 10
     
-    if request.mode == "WHO_OLDER":
+    if body.mode == "WHO_OLDER":
         questions_df = db.select_df(
             """
             SELECT 
@@ -183,13 +183,13 @@ async def start_session(
             ORDER BY RANDOM()
             LIMIT :limit
             """,
-            params={"mode": request.mode, "limit": num_questions}
+            params={"mode": body.mode, "limit": num_questions}
         )
     
     if questions_df.empty:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No questions available for mode: {request.mode}"
+            detail=f"No questions available for mode: {body.mode}"
         )
     
     # Create session
@@ -204,8 +204,8 @@ async def start_session(
         params={
             "id": session_id,
             "user_id": user_id,
-            "mode": request.mode,
-            "pack_date": request.pack_date,
+            "mode": body.mode,
+            "pack_date": body.pack_date,
         }
     )
     
@@ -226,7 +226,7 @@ async def start_session(
             hints=row.get('hints', []) or []
         )
         
-        if request.mode == "WHO_OLDER":
+        if body.mode == "WHO_OLDER":
             question.celebrity_id_a = row['celebrity_id_a']
             question.celebrity_id_b = row['celebrity_id_b']
             question.celebrity_name_a = row['celebrity_name_a']
@@ -236,7 +236,7 @@ async def start_session(
             question.celebrity_name = row['celebrity_name']
             
             # Populate options for REVERSE modes
-            if request.mode == "REVERSE_SIGN":
+            if body.mode == "REVERSE_SIGN":
                 # For signs, we can show them ALL (12) or 9. Let's show all 12 for choice.
                 # Or if we want exactly 9 as per wireframe, we pick correct + 8 randoms.
                 correct_sign = row['star_sign']
@@ -245,7 +245,7 @@ async def start_session(
                 random.shuffle(options)
                 question.options = options
                 
-            elif request.mode == "REVERSE_DOB":
+            elif body.mode == "REVERSE_DOB":
                 correct_year = int(row['dob_year'])
                 # Generate years around correct year
                 offsets = [-2, -1, 1, 2, 3, 4] # Example offsets for 6 options
@@ -256,7 +256,7 @@ async def start_session(
                 random.shuffle(options)
                 question.options = options
 
-            elif request.mode == "AGE_GUESS":
+            elif body.mode == "AGE_GUESS":
                 # Calculate age
                 dob = row['date_of_birth']
                 # Handle types - pandas Timestamp or date or str
@@ -287,7 +287,7 @@ async def start_session(
     
     return SessionResponse(
         id=session_id,
-        mode=request.mode,
+        mode=body.mode,
         questions=questions,
         started_at=datetime.utcnow()
     )
