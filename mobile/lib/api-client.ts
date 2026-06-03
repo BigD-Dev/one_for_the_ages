@@ -188,7 +188,7 @@ class APIClient {
     async logEvent(payload: {
         event_type: string
         event_data?: Record<string, unknown>
-        client_ts?: string
+        client_ts_tms?: string
     }) {
         // Fire and forget
         this.client.post('/v1/telemetry/events', payload).catch(() => { })

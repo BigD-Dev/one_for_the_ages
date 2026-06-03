@@ -42,7 +42,7 @@ async def get_app_config(
     # Fetch config from database
     config_df = db.select_df(
         """
-        SELECT key, value FROM da_prod.ofta_app_config
+        SELECT key, value FROM ofta_prod.ofta_app_config
         WHERE key IN ('min_client_version', 'feature_flags', 'maintenance_mode')
         """
     )

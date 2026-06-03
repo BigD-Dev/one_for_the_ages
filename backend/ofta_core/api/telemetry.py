@@ -21,7 +21,7 @@ router = APIRouter()
 class TelemetryEvent(BaseModel):
     event_type: str = Field(..., max_length=100)
     event_data: Optional[dict] = None
-    client_ts: Optional[str] = None
+    client_ts_tms: Optional[str] = None
     device_os: Optional[str] = None
     app_version: Optional[str] = None
 
@@ -56,27 +56,27 @@ async def log_event(
     user_id = None
     if current_user:
         user_df = db.select_df(
-            "SELECT id FROM da_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
+            "SELECT id FROM ofta_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
             params={"firebase_uid": current_user["firebase_uid"]}
         )
         if not user_df.empty:
             user_id = user_df.iloc[0]['id']
 
     # Parse client timestamp
-    client_ts = None
-    if event.client_ts:
+    client_ts_tms = None
+    if event.client_ts_tms:
         try:
-            client_ts = datetime.fromisoformat(event.client_ts.replace('Z', '+00:00'))
+            client_ts_tms = datetime.fromisoformat(event.client_ts_tms.replace('Z', '+00:00'))
         except (ValueError, AttributeError):
-            client_ts = None
+            client_ts_tms = None
 
     db.execute_query(
         """
-        INSERT INTO da_prod.ofta_telemetry_event (
-            user_id, event_type, event_data, client_ts,
+        INSERT INTO ofta_prod.ofta_telemetry_event (
+            user_id, event_type, event_data, client_ts_tms,
             device_os, app_version
         ) VALUES (
-            :user_id, :event_type, :event_data::jsonb, :client_ts,
+            :user_id, :event_type, :event_data::jsonb, :client_ts_tms,
             :device_os, :app_version
         )
         """,
@@ -84,7 +84,7 @@ async def log_event(
             "user_id": user_id,
             "event_type": event.event_type,
             "event_data": str(event.event_data) if event.event_data else None,
-            "client_ts": client_ts,
+            "client_ts_tms": client_ts_tms,
             "device_os": event.device_os,
             "app_version": event.app_version,
         }
@@ -105,27 +105,27 @@ async def log_batch_events(
     user_id = None
     if current_user:
         user_df = db.select_df(
-            "SELECT id FROM da_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
+            "SELECT id FROM ofta_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
             params={"firebase_uid": current_user["firebase_uid"]}
         )
         if not user_df.empty:
             user_id = user_df.iloc[0]['id']
 
     for event in request.events:
-        client_ts = None
-        if event.client_ts:
+        client_ts_tms = None
+        if event.client_ts_tms:
             try:
-                client_ts = datetime.fromisoformat(event.client_ts.replace('Z', '+00:00'))
+                client_ts_tms = datetime.fromisoformat(event.client_ts_tms.replace('Z', '+00:00'))
             except (ValueError, AttributeError):
-                client_ts = None
+                client_ts_tms = None
 
         db.execute_query(
             """
-            INSERT INTO da_prod.ofta_telemetry_event (
-                user_id, event_type, event_data, client_ts,
+            INSERT INTO ofta_prod.ofta_telemetry_event (
+                user_id, event_type, event_data, client_ts_tms,
                 device_os, app_version
             ) VALUES (
-                :user_id, :event_type, :event_data::jsonb, :client_ts,
+                :user_id, :event_type, :event_data::jsonb, :client_ts_tms,
                 :device_os, :app_version
             )
             """,
@@ -133,7 +133,7 @@ async def log_batch_events(
                 "user_id": user_id,
                 "event_type": event.event_type,
                 "event_data": str(event.event_data) if event.event_data else None,
-                "client_ts": client_ts,
+                "client_ts_tms": client_ts_tms,
                 "device_os": event.device_os,
                 "app_version": event.app_version,
             }

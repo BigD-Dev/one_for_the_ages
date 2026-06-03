@@ -70,7 +70,7 @@ async def get_daily_pack(
 
     # Check if pack exists
     pack_df = db.select_df(
-        "SELECT * FROM da_prod.ofta_daily_pack WHERE pack_date = :pack_date",
+        "SELECT * FROM ofta_prod.ofta_daily_pack WHERE pack_date = :pack_date",
         params={"pack_date": target_date}
     )
 
@@ -100,10 +100,10 @@ async def get_daily_pack(
             cb.primary_category as celeb_b_category,
             cb.nationality as celeb_b_nationality,
             cb.hints_easy as celeb_b_hints
-        FROM da_prod.ofta_question_template qt
-        LEFT JOIN da_prod.ofta_celebrity c ON qt.celebrity_id = c.id
-        LEFT JOIN da_prod.ofta_celebrity ca ON qt.celebrity_id_a = ca.id
-        LEFT JOIN da_prod.ofta_celebrity cb ON qt.celebrity_id_b = cb.id
+        FROM ofta_prod.ofta_question_template qt
+        LEFT JOIN ofta_prod.ofta_celebrity c ON qt.celebrity_id = c.id
+        LEFT JOIN ofta_prod.ofta_celebrity ca ON qt.celebrity_id_a = ca.id
+        LEFT JOIN ofta_prod.ofta_celebrity cb ON qt.celebrity_id_b = cb.id
         WHERE qt.is_active = TRUE
         ORDER BY md5(qt.id::text || :date_seed)
         LIMIT 10
@@ -158,13 +158,13 @@ async def get_daily_pack(
     user_score = None
     if current_user:
         user_df = db.select_df(
-            "SELECT id FROM da_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
+            "SELECT id FROM ofta_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
             params={"firebase_uid": current_user["firebase_uid"]}
         )
         if not user_df.empty:
             lb_df = db.select_df(
                 """
-                SELECT score FROM da_prod.ofta_leaderboard_daily
+                SELECT score FROM ofta_prod.ofta_leaderboard_daily
                 WHERE pack_date = :pack_date AND user_id = :user_id
                 """,
                 params={"pack_date": target_date, "user_id": user_df.iloc[0]['id']}
@@ -191,7 +191,7 @@ async def get_pack_status(
     db = get_db_connector()
 
     user_df = db.select_df(
-        "SELECT id FROM da_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
+        "SELECT id FROM ofta_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
         params={"firebase_uid": current_user["firebase_uid"]}
     )
 
@@ -200,7 +200,7 @@ async def get_pack_status(
 
     lb_df = db.select_df(
         """
-        SELECT score FROM da_prod.ofta_leaderboard_daily
+        SELECT score FROM ofta_prod.ofta_leaderboard_daily
         WHERE pack_date = :pack_date AND user_id = :user_id
         """,
         params={"pack_date": pack_date, "user_id": user_df.iloc[0]['id']}

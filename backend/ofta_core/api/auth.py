@@ -42,8 +42,8 @@ class UserResponse(BaseModel):
     country: Optional[str]
     device_os: Optional[str]
     auth_provider: str
-    created_at: datetime
-    last_active_at: datetime
+    created_at_tms: datetime
+    last_active_at_tms: datetime
 
 
 # ────────────────────────────────────────────────
@@ -78,8 +78,8 @@ async def register_user(
             country="US",
             device_os="web",
             auth_provider="email",
-            created_at=datetime.utcnow(),
-            last_active_at=datetime.utcnow()
+            created_at_tms=datetime.utcnow(),
+            last_active_at_tms=datetime.utcnow()
         )
     
     # Verify the firebase_uid matches the authenticated user
@@ -92,18 +92,18 @@ async def register_user(
     # Check if user already exists
     existing_user = db.select_df(
         """
-        SELECT * FROM da_prod.ofta_user_account
+        SELECT * FROM ofta_prod.ofta_user_account
         WHERE firebase_uid = :firebase_uid
         """,
         params={"firebase_uid": body.firebase_uid}
     )
     
     if not existing_user.empty:
-        # Update last_active_at
+        # Update last_active_at_tms
         db.execute_query(
             """
-            UPDATE da_prod.ofta_user_account
-            SET last_active_at = NOW()
+            UPDATE ofta_prod.ofta_user_account
+            SET last_active_at_tms = NOW()
             WHERE firebase_uid = :firebase_uid
             """,
             params={"firebase_uid": body.firebase_uid}
@@ -117,9 +117,9 @@ async def register_user(
     
     db.execute_query(
         """
-        INSERT INTO da_prod.ofta_user_account (
+        INSERT INTO ofta_prod.ofta_user_account (
             id, firebase_uid, display_name, email, country, 
-            device_os, auth_provider, created_at, last_active_at
+            device_os, auth_provider, created_at_tms, last_active_at_tms
         )
         VALUES (
             :id, :firebase_uid, :display_name, :email, :country,
@@ -139,7 +139,7 @@ async def register_user(
     
     # Fetch created user
     user_df = db.select_df(
-        "SELECT * FROM da_prod.ofta_user_account WHERE id = :id",
+        "SELECT * FROM ofta_prod.ofta_user_account WHERE id = :id",
         params={"id": user_id}
     )
     
@@ -156,7 +156,7 @@ async def get_current_user_info(
     
     user_df = db.select_df(
         """
-        SELECT * FROM da_prod.ofta_user_account
+        SELECT * FROM ofta_prod.ofta_user_account
         WHERE firebase_uid = :firebase_uid
         """,
         params={"firebase_uid": current_user["firebase_uid"]}
@@ -168,11 +168,11 @@ async def get_current_user_info(
             detail="User not found. Please register first."
         )
     
-    # Update last_active_at
+    # Update last_active_at_tms
     db.execute_query(
         """
-        UPDATE da_prod.ofta_user_account
-        SET last_active_at = NOW()
+        UPDATE ofta_prod.ofta_user_account
+        SET last_active_at_tms = NOW()
         WHERE firebase_uid = :firebase_uid
         """,
         params={"firebase_uid": current_user["firebase_uid"]}
@@ -208,10 +208,10 @@ async def update_user_profile(
             detail="No fields to update"
         )
     
-    updates.append("updated_at = NOW()")
+    updates.append("updated_at_tms = NOW()")
     
     query = f"""
-        UPDATE da_prod.ofta_user_account
+        UPDATE ofta_prod.ofta_user_account
         SET {', '.join(updates)}
         WHERE firebase_uid = :firebase_uid
     """
@@ -220,7 +220,7 @@ async def update_user_profile(
     
     # Fetch updated user
     user_df = db.select_df(
-        "SELECT * FROM da_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
+        "SELECT * FROM ofta_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
         params={"firebase_uid": current_user["firebase_uid"]}
     )
     
@@ -245,12 +245,12 @@ async def delete_user_account(
 
     db.execute_query(
         """
-        UPDATE da_prod.ofta_user_account
+        UPDATE ofta_prod.ofta_user_account
         SET display_name = 'Deleted User',
             email = NULL,
             firebase_uid = :anon_uid,
             is_banned = TRUE,
-            updated_at = NOW()
+            updated_at_tms = NOW()
         WHERE firebase_uid = :firebase_uid
         """,
         params={

@@ -35,28 +35,28 @@ router = APIRouter(dependencies=[Depends(verify_admin_key)])
 @router.get("/stats/celebrities")
 async def stats_celebrities():
     db = get_db_connector()
-    df = db.select_df("SELECT COUNT(*) as count FROM da_prod.ofta_celebrity")
+    df = db.select_df("SELECT COUNT(*) as count FROM ofta_prod.ofta_celebrity")
     return {"count": int(df.iloc[0]['count']) if not df.empty else 0}
 
 
 @router.get("/stats/questions")
 async def stats_questions():
     db = get_db_connector()
-    df = db.select_df("SELECT COUNT(*) as count FROM da_prod.ofta_question_template")
+    df = db.select_df("SELECT COUNT(*) as count FROM ofta_prod.ofta_question_template")
     return {"count": int(df.iloc[0]['count']) if not df.empty else 0}
 
 
 @router.get("/stats/users")
 async def stats_users():
     db = get_db_connector()
-    df = db.select_df("SELECT COUNT(*) as count FROM da_prod.ofta_user_account")
+    df = db.select_df("SELECT COUNT(*) as count FROM ofta_prod.ofta_user_account")
     return {"count": int(df.iloc[0]['count']) if not df.empty else 0}
 
 
 @router.get("/stats/sessions")
 async def stats_sessions():
     db = get_db_connector()
-    df = db.select_df("SELECT COUNT(*) as count FROM da_prod.ofta_game_session")
+    df = db.select_df("SELECT COUNT(*) as count FROM ofta_prod.ofta_game_session")
     return {"count": int(df.iloc[0]['count']) if not df.empty else 0}
 
 
@@ -88,8 +88,8 @@ async def list_celebrities():
     db = get_db_connector()
     df = db.select_df("""
         SELECT id, full_name, date_of_birth, star_sign, primary_category,
-               nationality, gender, popularity_score, is_active, created_at
-        FROM da_prod.ofta_celebrity
+               nationality, gender, popularity_score, is_active, created_at_tms
+        FROM ofta_prod.ofta_celebrity
         ORDER BY full_name
     """)
 
@@ -105,7 +105,7 @@ async def list_celebrities():
             "gender": row.get('gender'),
             "popularity_score": float(row.get('popularity_score', 50)),
             "is_active": bool(row.get('is_active', True)),
-            "created_at": str(row.get('created_at', '')),
+            "created_at_tms": str(row.get('created_at_tms', '')),
         })
 
     return {"celebrities": celebrities}
@@ -118,7 +118,7 @@ async def create_celebrity(request: CelebrityCreateRequest):
 
     db.execute_query(
         """
-        INSERT INTO da_prod.ofta_celebrity (
+        INSERT INTO ofta_prod.ofta_celebrity (
             id, full_name, date_of_birth, star_sign, primary_category,
             nationality, gender, popularity_score, hints_easy, hints_medium, hints_hard
         ) VALUES (
@@ -167,11 +167,11 @@ async def update_celebrity(celeb_id: str, request: CelebrityUpdateRequest):
     if not updates:
         return {"status": "no changes"}
 
-    updates.append("updated_at = NOW()")
+    updates.append("updated_at_tms = NOW()")
     set_clause = ", ".join(updates)
 
     db.execute_query(
-        f"UPDATE da_prod.ofta_celebrity SET {set_clause} WHERE id = :id",
+        f"UPDATE ofta_prod.ofta_celebrity SET {set_clause} WHERE id = :id",
         params=params
     )
 
@@ -196,10 +196,10 @@ async def list_questions():
             c.full_name as celebrity_name,
             ca.full_name as celebrity_a_name,
             cb.full_name as celebrity_b_name
-        FROM da_prod.ofta_question_template qt
-        LEFT JOIN da_prod.ofta_celebrity c ON qt.celebrity_id = c.id
-        LEFT JOIN da_prod.ofta_celebrity ca ON qt.celebrity_id_a = ca.id
-        LEFT JOIN da_prod.ofta_celebrity cb ON qt.celebrity_id_b = cb.id
+        FROM ofta_prod.ofta_question_template qt
+        LEFT JOIN ofta_prod.ofta_celebrity c ON qt.celebrity_id = c.id
+        LEFT JOIN ofta_prod.ofta_celebrity ca ON qt.celebrity_id_a = ca.id
+        LEFT JOIN ofta_prod.ofta_celebrity cb ON qt.celebrity_id_b = cb.id
         ORDER BY qt.mode, qt.difficulty
     """)
 
@@ -236,11 +236,11 @@ async def update_question(question_id: str, request: QuestionUpdateRequest):
     if not updates:
         return {"status": "no changes"}
 
-    updates.append("updated_at = NOW()")
+    updates.append("updated_at_tms = NOW()")
     set_clause = ", ".join(updates)
 
     db.execute_query(
-        f"UPDATE da_prod.ofta_question_template SET {set_clause} WHERE id = :id",
+        f"UPDATE ofta_prod.ofta_question_template SET {set_clause} WHERE id = :id",
         params=params
     )
 
@@ -256,9 +256,9 @@ async def list_users():
     db = get_db_connector()
     df = db.select_df("""
         SELECT id, display_name, email, auth_provider, is_banned,
-               created_at, last_active_at
-        FROM da_prod.ofta_user_account
-        ORDER BY created_at DESC
+               created_at_tms, last_active_at_tms
+        FROM ofta_prod.ofta_user_account
+        ORDER BY created_at_tms DESC
         LIMIT 200
     """)
 
@@ -270,8 +270,8 @@ async def list_users():
             "email": row.get('email'),
             "auth_provider": row.get('auth_provider', 'anonymous'),
             "is_banned": bool(row.get('is_banned', False)),
-            "created_at": str(row.get('created_at', '')),
-            "last_active_at": str(row.get('last_active_at', '')),
+            "created_at_tms": str(row.get('created_at_tms', '')),
+            "last_active_at_tms": str(row.get('last_active_at_tms', '')),
         })
 
     return {"users": users}
@@ -289,14 +289,14 @@ class ConfigRequest(BaseModel):
 @router.get("/config")
 async def list_config():
     db = get_db_connector()
-    df = db.select_df("SELECT key, value, updated_at FROM da_prod.ofta_app_config ORDER BY key")
+    df = db.select_df("SELECT key, value, updated_at_tms FROM ofta_prod.ofta_app_config ORDER BY key")
 
     configs = []
     for _, row in df.iterrows():
         configs.append({
             "key": row['key'],
             "value": row['value'],
-            "updated_at": str(row.get('updated_at', '')),
+            "updated_at_tms": str(row.get('updated_at_tms', '')),
         })
 
     return {"configs": configs}
@@ -308,9 +308,9 @@ async def upsert_config(request: ConfigRequest):
 
     db.execute_query(
         """
-        INSERT INTO da_prod.ofta_app_config (key, value, updated_at)
+        INSERT INTO ofta_prod.ofta_app_config (key, value, updated_at_tms)
         VALUES (:key, :value::jsonb, NOW())
-        ON CONFLICT (key) DO UPDATE SET value = :value::jsonb, updated_at = NOW()
+        ON CONFLICT (key) DO UPDATE SET value = :value::jsonb, updated_at_tms = NOW()
         """,
         params={"key": request.key, "value": json.dumps(request.value)}
     )
@@ -328,11 +328,11 @@ async def analytics_sessions_per_day():
     db = get_db_connector()
     df = db.select_df("""
         SELECT
-            DATE(started_at) as day,
+            DATE(started_at_tms) as day,
             COUNT(*) as count
-        FROM da_prod.ofta_game_session
-        WHERE started_at >= NOW() - INTERVAL '7 days'
-        GROUP BY DATE(started_at)
+        FROM ofta_prod.ofta_game_session
+        WHERE started_at_tms >= NOW() - INTERVAL '7 days'
+        GROUP BY DATE(started_at_tms)
         ORDER BY day DESC
     """)
 
@@ -360,8 +360,8 @@ async def analytics_score_distribution():
                 ELSE '900+'
             END as bracket,
             COUNT(*) as count
-        FROM da_prod.ofta_game_session
-        WHERE ended_at IS NOT NULL AND total_score IS NOT NULL
+        FROM ofta_prod.ofta_game_session
+        WHERE ended_at_tms IS NOT NULL AND total_score IS NOT NULL
         GROUP BY bracket
         ORDER BY bracket
     """)
@@ -381,13 +381,13 @@ async def analytics_active_users():
     db = get_db_connector()
 
     dau = db.select_df(
-        "SELECT COUNT(DISTINCT user_id) as cnt FROM da_prod.ofta_game_session WHERE started_at >= NOW() - INTERVAL '1 day'"
+        "SELECT COUNT(DISTINCT user_id) as cnt FROM ofta_prod.ofta_game_session WHERE started_at_tms >= NOW() - INTERVAL '1 day'"
     )
     wau = db.select_df(
-        "SELECT COUNT(DISTINCT user_id) as cnt FROM da_prod.ofta_game_session WHERE started_at >= NOW() - INTERVAL '7 days'"
+        "SELECT COUNT(DISTINCT user_id) as cnt FROM ofta_prod.ofta_game_session WHERE started_at_tms >= NOW() - INTERVAL '7 days'"
     )
     mau = db.select_df(
-        "SELECT COUNT(DISTINCT user_id) as cnt FROM da_prod.ofta_game_session WHERE started_at >= NOW() - INTERVAL '30 days'"
+        "SELECT COUNT(DISTINCT user_id) as cnt FROM ofta_prod.ofta_game_session WHERE started_at_tms >= NOW() - INTERVAL '30 days'"
     )
 
     return {
@@ -413,7 +413,7 @@ async def bulk_import_celebrities(celebrities: List[CelebrityCreateRequest]):
             celeb_id = str(uuid.uuid4())
             db.execute_query(
                 """
-                INSERT INTO da_prod.ofta_celebrity (
+                INSERT INTO ofta_prod.ofta_celebrity (
                     id, full_name, date_of_birth, star_sign, primary_category,
                     nationality, gender, popularity_score,
                     hints_easy, hints_medium, hints_hard

@@ -37,7 +37,7 @@ class AchievementResponse(BaseModel):
     description: str
     icon: Optional[str] = None
     unlocked: bool = False
-    unlocked_at: Optional[datetime] = None
+    unlocked_at_tms: Optional[datetime] = None
 
 
 class UserAchievementsResponse(BaseModel):
@@ -72,10 +72,13 @@ async def get_user_stats(
     current_user: dict = Depends(get_current_user)
 ):
     """Get current user's aggregated stats."""
+    if current_user.get("firebase_uid") == "dev_user_123":
+        return UserStatsResponse()
+
     db = get_db_connector()
 
     user_df = db.select_df(
-        "SELECT id FROM da_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
+        "SELECT id FROM ofta_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
         params={"firebase_uid": current_user["firebase_uid"]}
     )
 
@@ -85,7 +88,7 @@ async def get_user_stats(
     user_id = user_df.iloc[0]['id']
 
     stats_df = db.select_df(
-        "SELECT * FROM da_prod.ofta_user_stats WHERE user_id = :user_id",
+        "SELECT * FROM ofta_prod.ofta_user_stats WHERE user_id = :user_id",
         params={"user_id": user_id}
     )
 
@@ -116,7 +119,7 @@ async def get_user_achievements(
     db = get_db_connector()
 
     user_df = db.select_df(
-        "SELECT id FROM da_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
+        "SELECT id FROM ofta_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
         params={"firebase_uid": current_user["firebase_uid"]}
     )
 
@@ -130,11 +133,11 @@ async def get_user_achievements(
         """
         SELECT 
             a.id, a.title, a.description, a.icon,
-            ua.unlocked_at
-        FROM da_prod.ofta_achievement a
-        LEFT JOIN da_prod.ofta_user_achievement ua 
+            ua.unlocked_at_tms
+        FROM ofta_prod.ofta_achievement a
+        LEFT JOIN ofta_prod.ofta_user_achievement ua 
             ON a.id = ua.achievement_id AND ua.user_id = :user_id
-        ORDER BY ua.unlocked_at DESC NULLS LAST, a.id
+        ORDER BY ua.unlocked_at_tms DESC NULLS LAST, a.id
         """,
         params={"user_id": user_id}
     )
@@ -142,7 +145,7 @@ async def get_user_achievements(
     achievements = []
     total_unlocked = 0
     for _, row in ach_df.iterrows():
-        unlocked = row['unlocked_at'] is not None
+        unlocked = row['unlocked_at_tms'] is not None
         if unlocked:
             total_unlocked += 1
         achievements.append(AchievementResponse(
@@ -151,7 +154,7 @@ async def get_user_achievements(
             description=row['description'],
             icon=row.get('icon'),
             unlocked=unlocked,
-            unlocked_at=row['unlocked_at'] if unlocked else None,
+            unlocked_at_tms=row['unlocked_at_tms'] if unlocked else None,
         ))
 
     return UserAchievementsResponse(
@@ -171,7 +174,7 @@ async def get_game_history(
     db = get_db_connector()
 
     user_df = db.select_df(
-        "SELECT id FROM da_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
+        "SELECT id FROM ofta_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
         params={"firebase_uid": current_user["firebase_uid"]}
     )
 
@@ -184,10 +187,10 @@ async def get_game_history(
         """
         SELECT 
             id, mode, total_score, correct_count, questions_count,
-            best_streak, started_at
-        FROM da_prod.ofta_game_session
-        WHERE user_id = :user_id AND ended_at IS NOT NULL
-        ORDER BY started_at DESC
+            best_streak, started_at_tms
+        FROM ofta_prod.ofta_game_session
+        WHERE user_id = :user_id AND ended_at_tms IS NOT NULL
+        ORDER BY started_at_tms DESC
         LIMIT :limit OFFSET :offset
         """,
         params={"user_id": user_id, "limit": limit, "offset": offset}
@@ -195,8 +198,8 @@ async def get_game_history(
 
     total_df = db.select_df(
         """
-        SELECT COUNT(*) as cnt FROM da_prod.ofta_game_session
-        WHERE user_id = :user_id AND ended_at IS NOT NULL
+        SELECT COUNT(*) as cnt FROM ofta_prod.ofta_game_session
+        WHERE user_id = :user_id AND ended_at_tms IS NOT NULL
         """,
         params={"user_id": user_id}
     )
@@ -215,7 +218,7 @@ async def get_game_history(
             questions_count=questions_count,
             best_streak=int(row.get('best_streak', 0) or 0),
             accuracy=accuracy,
-            played_at=row['started_at'],
+            played_at=row['started_at_tms'],
         ))
 
     return GameHistoryResponse(

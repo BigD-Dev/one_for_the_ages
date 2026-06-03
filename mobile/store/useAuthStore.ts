@@ -18,8 +18,8 @@ export interface OftaUser {
     country: string | null
     device_os: string | null
     auth_provider: string
-    created_at: string
-    last_active_at: string
+    created_at_tms: string
+    last_active_at_tms: string
 }
 
 interface AuthState {

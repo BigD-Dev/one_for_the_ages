@@ -50,7 +50,7 @@ class SessionResponse(BaseModel):
     id: str
     mode: str
     questions: List[QuestionResponse]
-    started_at: datetime
+    started_at_tms: datetime
 
 
 class SubmitAnswerRequest(BaseModel):
@@ -120,12 +120,12 @@ async def start_session(
             id="dev_session_123",
             mode=body.mode,
             questions=questions,
-            started_at=datetime.utcnow()
+            started_at_tms=datetime.utcnow()
         )
     
     # Get user from database
     user_df = db.select_df(
-        "SELECT id FROM da_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
+        "SELECT id FROM ofta_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
         params={"firebase_uid": current_user["firebase_uid"]}
     )
     
@@ -154,9 +154,9 @@ async def start_session(
                 cb.full_name as celebrity_name_b,
                 ca.hints_easy as hints_a,
                 cb.hints_easy as hints_b
-            FROM da_prod.ofta_question_template qt
-            JOIN da_prod.ofta_celebrity ca ON qt.celebrity_id_a = ca.id
-            JOIN da_prod.ofta_celebrity cb ON qt.celebrity_id_b = cb.id
+            FROM ofta_prod.ofta_question_template qt
+            JOIN ofta_prod.ofta_celebrity ca ON qt.celebrity_id_a = ca.id
+            JOIN ofta_prod.ofta_celebrity cb ON qt.celebrity_id_b = cb.id
             WHERE qt.mode = 'WHO_OLDER' AND qt.is_active = TRUE
             ORDER BY RANDOM()
             LIMIT :limit
@@ -177,8 +177,8 @@ async def start_session(
                 c.star_sign,
                 c.date_of_birth,
                 EXTRACT(YEAR FROM c.date_of_birth) as dob_year
-            FROM da_prod.ofta_question_template qt
-            JOIN da_prod.ofta_celebrity c ON qt.celebrity_id = c.id
+            FROM ofta_prod.ofta_question_template qt
+            JOIN ofta_prod.ofta_celebrity c ON qt.celebrity_id = c.id
             WHERE qt.mode = :mode AND qt.is_active = TRUE
             ORDER BY RANDOM()
             LIMIT :limit
@@ -195,8 +195,8 @@ async def start_session(
     # Create session
     db.execute_query(
         """
-        INSERT INTO da_prod.ofta_game_session (
-            id, user_id, mode, pack_date, started_at
+        INSERT INTO ofta_prod.ofta_game_session (
+            id, user_id, mode, pack_date, started_at_tms
         ) VALUES (
             :id, :user_id, :mode, :pack_date, NOW()
         )
@@ -289,7 +289,7 @@ async def start_session(
         id=session_id,
         mode=body.mode,
         questions=questions,
-        started_at=datetime.utcnow()
+        started_at_tms=datetime.utcnow()
     )
 
 
@@ -309,8 +309,8 @@ async def submit_answer(
     session_df = db.select_df(
         """
         SELECT gs.id, gs.mode, ua.firebase_uid
-        FROM da_prod.ofta_game_session gs
-        JOIN da_prod.ofta_user_account ua ON gs.user_id = ua.id
+        FROM ofta_prod.ofta_game_session gs
+        JOIN ofta_prod.ofta_user_account ua ON gs.user_id = ua.id
         WHERE gs.id = :session_id
         """,
         params={"session_id": session_id}
@@ -346,10 +346,10 @@ async def submit_answer(
             c.star_sign,
             ca.date_of_birth as dob_a,
             cb.date_of_birth as dob_b
-        FROM da_prod.ofta_question_template qt
-        LEFT JOIN da_prod.ofta_celebrity c ON qt.celebrity_id = c.id
-        LEFT JOIN da_prod.ofta_celebrity ca ON qt.celebrity_id_a = ca.id
-        LEFT JOIN da_prod.ofta_celebrity cb ON qt.celebrity_id_b = cb.id
+        FROM ofta_prod.ofta_question_template qt
+        LEFT JOIN ofta_prod.ofta_celebrity c ON qt.celebrity_id = c.id
+        LEFT JOIN ofta_prod.ofta_celebrity ca ON qt.celebrity_id_a = ca.id
+        LEFT JOIN ofta_prod.ofta_celebrity cb ON qt.celebrity_id_b = cb.id
         WHERE qt.id = :question_id
         """,
         params={"question_id": request.question_template_id}
@@ -438,7 +438,7 @@ async def submit_answer(
     streak_df = db.select_df(
         """
         SELECT is_correct
-        FROM da_prod.ofta_question_attempt
+        FROM ofta_prod.ofta_question_attempt
         WHERE session_id = :session_id
         ORDER BY question_index DESC
         """,
@@ -468,9 +468,9 @@ async def submit_answer(
     # Record attempt
     db.execute_query(
         """
-        INSERT INTO da_prod.ofta_question_attempt (
+        INSERT INTO ofta_prod.ofta_question_attempt (
             session_id, question_template_id, question_index,
-            shown_at, answered_at, response_time_ms,
+            shown_at_tms, answered_at_tms, response_time_ms,
             user_answer, is_correct, error_value,
             hints_used, score_awarded, streak_at_time
         ) VALUES (
@@ -517,8 +517,8 @@ async def end_session(
     session_df = db.select_df(
         """
         SELECT gs.id, gs.user_id, ua.firebase_uid
-        FROM da_prod.ofta_game_session gs
-        JOIN da_prod.ofta_user_account ua ON gs.user_id = ua.id
+        FROM ofta_prod.ofta_game_session gs
+        JOIN ofta_prod.ofta_user_account ua ON gs.user_id = ua.id
         WHERE gs.id = :session_id
         """,
         params={"session_id": session_id}
@@ -543,7 +543,7 @@ async def end_session(
             COUNT(*) as questions_count,
             SUM(CASE WHEN is_correct THEN 1 ELSE 0 END) as correct_count,
             SUM(score_awarded) as total_score
-        FROM da_prod.ofta_question_attempt
+        FROM ofta_prod.ofta_question_attempt
         WHERE session_id = :session_id
         """,
         params={"session_id": session_id}
@@ -558,7 +558,7 @@ async def end_session(
     attempts_df = db.select_df(
         """
         SELECT is_correct
-        FROM da_prod.ofta_question_attempt
+        FROM ofta_prod.ofta_question_attempt
         WHERE session_id = :session_id
         ORDER BY question_index
         """,
@@ -577,9 +577,9 @@ async def end_session(
     # Update session
     db.execute_query(
         """
-        UPDATE da_prod.ofta_game_session
+        UPDATE ofta_prod.ofta_game_session
         SET 
-            ended_at = NOW(),
+            ended_at_tms = NOW(),
             total_score = :total_score,
             questions_count = :questions_count,
             correct_count = :correct_count,
@@ -601,7 +601,7 @@ async def end_session(
     user_stats_df = db.select_df(
         """
         SELECT lifetime_score
-        FROM da_prod.ofta_user_stats
+        FROM ofta_prod.ofta_user_stats
         WHERE user_id = :user_id
         """,
         params={"user_id": session_df.iloc[0]['user_id']} # Need user_id from session_df?
@@ -616,7 +616,7 @@ async def end_session(
     rank_df = db.select_df(
         """
         SELECT COUNT(*) as rank_above
-        FROM da_prod.ofta_user_stats
+        FROM ofta_prod.ofta_user_stats
         WHERE lifetime_score > :score
         """,
         params={"score": lifetime_score}

@@ -80,8 +80,8 @@ async def get_daily_leaderboard(
             ua.display_name,
             ua.firebase_uid,
             RANK() OVER (ORDER BY lb.score DESC) as rank
-        FROM da_prod.ofta_leaderboard_daily lb
-        JOIN da_prod.ofta_user_account ua ON lb.user_id = ua.id
+        FROM ofta_prod.ofta_leaderboard_daily lb
+        JOIN ofta_prod.ofta_user_account ua ON lb.user_id = ua.id
         WHERE lb.pack_date = :pack_date
         ORDER BY lb.score DESC
         LIMIT :limit OFFSET :offset
@@ -111,7 +111,7 @@ async def get_daily_leaderboard(
 
     # Total players count
     total_df = db.select_df(
-        "SELECT COUNT(*) as cnt FROM da_prod.ofta_leaderboard_daily WHERE pack_date = :pack_date",
+        "SELECT COUNT(*) as cnt FROM ofta_prod.ofta_leaderboard_daily WHERE pack_date = :pack_date",
         params={"pack_date": target_date}
     )
     total_players = int(total_df.iloc[0]['cnt']) if not total_df.empty else 0
@@ -144,8 +144,8 @@ async def get_all_time_leaderboard(
             ua.display_name,
             ua.firebase_uid,
             RANK() OVER (ORDER BY us.lifetime_score DESC) as rank
-        FROM da_prod.ofta_user_stats us
-        JOIN da_prod.ofta_user_account ua ON us.user_id = ua.id
+        FROM ofta_prod.ofta_user_stats us
+        JOIN ofta_prod.ofta_user_account ua ON us.user_id = ua.id
         WHERE us.games_played > 0
         ORDER BY us.lifetime_score DESC
         LIMIT :limit OFFSET :offset
@@ -173,7 +173,7 @@ async def get_all_time_leaderboard(
             current_user_rank = int(row['rank'])
 
     total_df = db.select_df(
-        "SELECT COUNT(*) as cnt FROM da_prod.ofta_user_stats WHERE games_played > 0"
+        "SELECT COUNT(*) as cnt FROM ofta_prod.ofta_user_stats WHERE games_played > 0"
     )
     total_players = int(total_df.iloc[0]['cnt']) if not total_df.empty else 0
 
@@ -197,7 +197,7 @@ async def submit_daily_score(
 
     # Get user
     user_df = db.select_df(
-        "SELECT id FROM da_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
+        "SELECT id FROM ofta_prod.ofta_user_account WHERE firebase_uid = :firebase_uid",
         params={"firebase_uid": current_user["firebase_uid"]}
     )
 
@@ -210,11 +210,11 @@ async def submit_daily_score(
     session_df = db.select_df(
         """
         SELECT total_score
-        FROM da_prod.ofta_game_session
+        FROM ofta_prod.ofta_game_session
         WHERE user_id = :user_id
           AND mode = 'DAILY_CHALLENGE'
           AND pack_date = :pack_date
-          AND ended_at IS NOT NULL
+          AND ended_at_tms IS NOT NULL
         ORDER BY total_score DESC
         LIMIT 1
         """,
@@ -232,11 +232,11 @@ async def submit_daily_score(
     # Upsert leaderboard entry (keep best score)
     db.execute_query(
         """
-        INSERT INTO da_prod.ofta_leaderboard_daily (pack_date, user_id, score, submitted_at)
+        INSERT INTO ofta_prod.ofta_leaderboard_daily (pack_date, user_id, score, submitted_at_tms)
         VALUES (:pack_date, :user_id, :score, NOW())
         ON CONFLICT (pack_date, user_id)
-        DO UPDATE SET score = GREATEST(da_prod.ofta_leaderboard_daily.score, EXCLUDED.score),
-                      submitted_at = NOW()
+        DO UPDATE SET score = GREATEST(ofta_prod.ofta_leaderboard_daily.score, EXCLUDED.score),
+                      submitted_at_tms = NOW()
         """,
         params={"pack_date": pack_date, "user_id": user_id, "score": score}
     )
