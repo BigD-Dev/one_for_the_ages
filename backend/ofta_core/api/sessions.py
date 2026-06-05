@@ -4,6 +4,7 @@ Game session endpoints for OFTA
 """
 
 import os
+import json
 import logging
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field, field_validator
@@ -101,27 +102,8 @@ async def start_session(
     if current_user.get("firebase_uid") == "dev_user_123":
         if os.getenv("ENVIRONMENT") != "development":
             raise HTTPException(status_code=403, detail="Dev users not allowed in this environment")
-        questions = []
-        for i in range(10):
-            questions.append(QuestionResponse(
-                id=f"q_{i}",
-                mode=body.mode,
-                difficulty=1,
-                celebrity_name="Celebrity A",
-                celebrity_id="celeb_a",
-                celebrity_name_a="Celebrity A",
-                celebrity_id_a="celeb_a",
-                celebrity_name_b="Celebrity B",
-                celebrity_id_b="celeb_b",
-                options=[28, 32, 35, 39]
-            ))
-
-        return SessionResponse(
-            id="dev_session_123",
-            mode=body.mode,
-            questions=questions,
-            started_at_tms=datetime.utcnow()
-        )
+        # Use real celebrities so the dev experience mirrors production
+        current_user = {"firebase_uid": "dev_user_123", "id": "dev_user_id_123"}
     
     # Get user from database
     user_df = db.select_df(
@@ -220,19 +202,19 @@ async def start_session(
     
     for _, row in questions_df.iterrows():
         question = QuestionResponse(
-            id=row['id'],
+            id=str(row['id']),
             mode=row['mode'],
             difficulty=row['difficulty'],
             hints=row.get('hints', []) or []
         )
-        
+
         if body.mode == "WHO_OLDER":
-            question.celebrity_id_a = row['celebrity_id_a']
-            question.celebrity_id_b = row['celebrity_id_b']
+            question.celebrity_id_a = str(row['celebrity_id_a'])
+            question.celebrity_id_b = str(row['celebrity_id_b'])
             question.celebrity_name_a = row['celebrity_name_a']
             question.celebrity_name_b = row['celebrity_name_b']
         else:
-            question.celebrity_id = row['celebrity_id']
+            question.celebrity_id = str(row['celebrity_id'])
             question.celebrity_name = row['celebrity_name']
             
             # Populate options for REVERSE modes
@@ -476,7 +458,7 @@ async def submit_answer(
         ) VALUES (
             :session_id, :question_template_id, :question_index,
             NOW(), NOW(), :response_time_ms,
-            :user_answer::jsonb, :is_correct, :error_value,
+            CAST(:user_answer AS jsonb), :is_correct, :error_value,
             :hints_used, :score_awarded, :streak_at_time
         )
         """,
@@ -485,7 +467,7 @@ async def submit_answer(
             "question_template_id": request.question_template_id,
             "question_index": request.question_index,
             "response_time_ms": request.response_time_ms,
-            "user_answer": str(request.user_answer),
+            "user_answer": json.dumps(request.user_answer),
             "is_correct": is_correct,
             "error_value": error_value,
             "hints_used": request.hints_used,
