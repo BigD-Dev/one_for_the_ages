@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button'
 import { Switch } from '@/components/ui/Switch'
 import { ProgressBar } from '@/components/ui/ProgressBar'
 import { ArrowLeft, Check, LogOut, Trash2 } from 'lucide-react'
+import { signOut } from '@/lib/firebase'
 
 interface UserStats {
     lifetime_score: number
@@ -68,9 +69,10 @@ export default function ProfilePage() {
         localStorage.setItem('ofta-settings', JSON.stringify(newSettings))
     }
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        await signOut().catch(() => null)
         logout()
-        router.push('/')
+        router.push('/welcome')
     }
 
     const handleDeleteAccount = async () => {

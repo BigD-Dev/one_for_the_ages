@@ -18,6 +18,7 @@ export const AppShell = ({ children, className = '' }: AppShellProps) => {
                     width={54}
                     height={20}
                     className="opacity-50"
+                    style={{ width: 54, height: 'auto' }}
                     priority
                 />
             </div>

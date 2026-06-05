@@ -25,10 +25,10 @@ export default function Home() {
     const [timeLeft, setTimeLeft] = useState('')
     const [stats, setStats] = useState<UserStats | null>(null)
 
-    // Dev Auto-Login Logic
+    // Dev Auto-Login Logic — set NEXT_PUBLIC_DEV_AUTO_LOGIN=true in .env.local to enable
     useEffect(() => {
         const performDevLogin = async () => {
-            if (!isAuthenticated && process.env.NODE_ENV === 'development') {
+            if (!isAuthenticated && process.env.NEXT_PUBLIC_DEV_AUTO_LOGIN === 'true') {
                 logger.info('performing dev auto-login...')
                 const devUser = {
                     uid: 'dev_user_123',
@@ -115,7 +115,7 @@ export default function Home() {
 
     const levelInfo = calculateLevel(stats?.lifetime_score || 0)
     const user = {
-        name: authUser?.displayName || 'Player',
+        name: authUser?.displayName || 'Challenger',
         level: levelInfo.level,
         streak: stats?.current_streak || 0,
         accuracy: stats ? Math.round(stats.accuracy_pct) : 0,
@@ -124,7 +124,7 @@ export default function Home() {
 
     return (
         <AppShell className="bg-canvas pb-24">
-            <div className="flex flex-col space-y-8 px-6 pt-8">
+            <div className="flex flex-col space-y-8 px-6 pt-16">
 
                 {/* 1️⃣ Header Section: Identity + Streak */}
                 <header className="space-y-1">
@@ -177,7 +177,7 @@ export default function Home() {
                             title="Age Guess"
                             subtitle="Precision Mode"
                             icon={<Hourglass size={18} />}
-                            className="h-24 aspect-auto"
+                            className="h-28 aspect-auto"
                         />
                         <ArtifactCard
                             href="/game/whos-older"
@@ -185,7 +185,7 @@ export default function Home() {
                             title="Who’s Older?"
                             subtitle="Versus Mode"
                             icon={<Scale size={18} />}
-                            className="h-24 aspect-auto"
+                            className="h-28 aspect-auto"
                         />
                         <ArtifactCard
                             href="/game/reverse"
@@ -193,7 +193,7 @@ export default function Home() {
                             title="Reverse / Zodiac"
                             subtitle="Astrological Timeline"
                             icon={<Star size={18} />}
-                            className="h-24 aspect-auto"
+                            className="h-28 aspect-auto"
                         />
                     </div>
                 </section>
