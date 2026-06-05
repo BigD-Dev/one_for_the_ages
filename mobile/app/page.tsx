@@ -128,9 +128,19 @@ export default function Home() {
 
                 {/* 1️⃣ Header Section: Identity + Streak */}
                 <header className="space-y-1">
-                    <h1 className="font-serif text-2xl text-text-primary tracking-tight">
-                        {getGreeting()}, {user.name}
-                    </h1>
+                    <div className="flex items-center justify-between">
+                        <h1 className="font-serif text-2xl text-text-primary tracking-tight">
+                            {getGreeting()}, {user.name}
+                        </h1>
+                        {!isAuthenticated && (
+                            <Link
+                                href="/welcome"
+                                className="font-sans text-[10px] text-primary tracking-widest uppercase border border-primary/40 rounded-sharp px-3 py-1.5 hover:bg-primary/10 transition-colors"
+                            >
+                                Sign In
+                            </Link>
+                        )}
+                    </div>
                     <div className="flex items-center gap-2 font-sans text-xs tracking-widest uppercase">
                         <span className="text-text-muted">Level {user.level}</span>
                         <span className="text-border-subtle">•</span>

@@ -3,6 +3,7 @@ import { Fraunces, Inter, Montserrat } from 'next/font/google'
 import './globals.css'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { OfflineBanner } from '@/components/ui/OfflineBanner'
+import { AuthProvider } from '@/components/providers/AuthProvider'
 
 const fraunces = Fraunces({
     subsets: ['latin'],
@@ -46,8 +47,10 @@ export default function RootLayout({
         <html lang="en" className={`${fraunces.variable} ${inter.variable} ${montserrat.variable}`}>
             <body className="bg-canvas text-text-primary font-montserrat font-bold antialiased">
                 <ErrorBoundary>
-                    <OfflineBanner />
-                    {children}
+                    <AuthProvider>
+                        <OfflineBanner />
+                        {children}
+                    </AuthProvider>
                 </ErrorBoundary>
             </body>
         </html>

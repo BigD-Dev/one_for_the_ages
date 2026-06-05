@@ -40,7 +40,7 @@ export default function ProfilePage() {
 
     useEffect(() => {
         if (!isAuthenticated) {
-            router.push('/')
+            router.push('/welcome')
             return
         }
         loadProfile()

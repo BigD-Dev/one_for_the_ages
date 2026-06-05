@@ -3,14 +3,16 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Trophy, User } from 'lucide-react'
+import { useAuthStore } from '@/store/useAuthStore'
 
 export const BottomNav = () => {
     const pathname = usePathname()
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
     const navItems = [
         { label: 'Home', href: '/', icon: Home },
         { label: 'Leaderboard', href: '/leaderboard', icon: Trophy },
-        { label: 'Profile', href: '/profile', icon: User },
+        { label: 'Profile', href: isAuthenticated ? '/profile' : '/welcome', icon: User },
     ]
 
     return (
