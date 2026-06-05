@@ -87,49 +87,43 @@ export default function AgeGuessPage() {
         if (isNaN(userGuess) || !currentQuestion || isSubmitting || feedback.type) return
 
         setIsSubmitting(true)
-        try {
-            const questionStartTime = useGameStore.getState().questionStartTime || Date.now()
-            const responseTimeMs = Date.now() - questionStartTime
+        const questionStartTime = useGameStore.getState().questionStartTime || Date.now()
+        const responseTimeMs = Date.now() - questionStartTime
 
-            const result = await apiClient.submitAnswer(sessionId!, {
+        // Fire API immediately, but wait at least 400ms before revealing result
+        const [result] = await Promise.all([
+            apiClient.submitAnswer(sessionId!, {
                 question_template_id: currentQuestion.id,
                 question_index: currentQuestionIndex,
                 user_answer: { age: userGuess },
                 response_time_ms: responseTimeMs,
                 hints_used: hasUsedHint ? 1 : 0,
-            })
+            }).catch((error) => { logger.error('Failed to submit:', error); return null }),
+            new Promise(resolve => setTimeout(resolve, 400)),
+        ])
 
-            const correctAge = result.correct_answer.age
-            const diff = Math.abs(userGuess - correctAge)
+        if (!result) { setIsSubmitting(false); return }
 
-            let type: 'spot-on' | 'close' | 'wrong' = 'wrong'
-            if (diff === 0) {
-                type = 'spot-on'
-                sounds.play('correct')
-                await Haptics.impact({ style: ImpactStyle.Heavy })
-            } else if (diff <= 2) {
-                type = 'close'
-                sounds.play('correct')
-                await Haptics.impact({ style: ImpactStyle.Medium })
-            } else {
-                sounds.play('wrong')
-                await Haptics.impact({ style: ImpactStyle.Light })
-            }
+        const correctAge = result.correct_answer.age
+        const diff = Math.abs(userGuess - correctAge)
 
-            setFeedback({
-                type,
-                correctAge,
-                scoreAwarded: result.score_awarded,
-                diff
-            })
-
-            submitAnswer(result.is_correct, result.score_awarded)
-
-        } catch (error) {
-            logger.error('Failed to submit:', error)
-        } finally {
-            setIsSubmitting(false)
+        let type: 'spot-on' | 'close' | 'wrong' = 'wrong'
+        if (diff === 0) {
+            type = 'spot-on'
+            sounds.play('correct')
+            await Haptics.impact({ style: ImpactStyle.Heavy })
+        } else if (diff <= 2) {
+            type = 'close'
+            sounds.play('correct')
+            await Haptics.impact({ style: ImpactStyle.Medium })
+        } else {
+            sounds.play('wrong')
+            await Haptics.impact({ style: ImpactStyle.Light })
         }
+
+        setFeedback({ type, correctAge, scoreAwarded: result.score_awarded, diff })
+        submitAnswer(result.is_correct, result.score_awarded)
+        setIsSubmitting(false)
     }
 
     const handleNext = () => {
