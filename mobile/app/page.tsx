@@ -153,19 +153,29 @@ export default function Home() {
 
                 {/* 2️⃣ Daily Challenge (Hero Card) */}
                 <section>
-                    <div className="relative group">
-                        <ArtifactCard
-                            variant="hero"
-                            title="Daily Challenge"
-                            subtitle="10 Questions • One Attempt"
-                            className="bg-gradient-to-br from-surface-raised to-canvas border-gold/30 hover:border-gold/50"
-                        />
-                        {/* Custom content inside Hero Area */}
-                        <div className="absolute bottom-6 left-6 right-6 flex flex-col items-start gap-4 pointer-events-none">
+                    <div className="relative bg-gradient-to-br from-surface-raised to-canvas border border-gold/30 rounded-sharp overflow-hidden p-6 flex flex-col gap-6">
+                        {/* Decorative glow */}
+                        <div className="absolute top-0 right-0 w-40 h-40 bg-gold/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
+                        {/* Top: label + description */}
+                        <div className="z-10">
+                            <div className="font-sans text-[10px] text-gold tracking-[0.3em] uppercase mb-3">
+                                Daily Challenge
+                            </div>
+                            <h3 className="font-serif text-2xl text-text-primary leading-snug mb-2">
+                                One pack. One shot.<br />Everyone competes.
+                            </h3>
+                            <p className="font-sans text-xs text-text-muted leading-relaxed">
+                                10 questions · same pack for all players today · ranked on the global leaderboard
+                            </p>
+                        </div>
+
+                        {/* Bottom: timer + button */}
+                        <div className="z-10 flex flex-col gap-3">
                             <div className="font-sans text-[10px] text-gold tracking-[0.2em] uppercase opacity-70">
                                 Resets in {timeLeft}
                             </div>
-                            <Link href="/game/daily" className="pointer-events-auto w-full">
+                            <Link href="/game/daily" className="w-full">
                                 <button className="w-full bg-primary text-white font-sans text-xs tracking-widest uppercase py-4 rounded-sharp flex items-center justify-center gap-2 active:bg-primary/80 transition-all shadow-lg shadow-black/40">
                                     Play Today’s Challenge
                                     <ArrowRight size={14} />
@@ -184,7 +194,7 @@ export default function Home() {
                         <ArtifactCard
                             href="/game/age-guess"
                             variant="wide"
-                            title="Age Guess"
+                            title="Guess the Age"
                             subtitle="Precision Mode"
                             icon={<Hourglass size={18} />}
                             className="h-28 aspect-auto"
@@ -200,7 +210,7 @@ export default function Home() {
                         <ArtifactCard
                             href="/game/reverse"
                             variant="wide"
-                            title="Reverse / Zodiac"
+                            title="Zodiac"
                             subtitle="Astrological Timeline"
                             icon={<Star size={18} />}
                             className="h-28 aspect-auto"

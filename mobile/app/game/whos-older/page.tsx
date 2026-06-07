@@ -53,7 +53,7 @@ export default function WhosOlderPage() {
 
     useEffect(() => {
         if (!isAuthenticated) {
-            router.push('/')
+            router.push('/welcome')
             return
         }
 

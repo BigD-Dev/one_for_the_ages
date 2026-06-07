@@ -58,7 +58,7 @@ export default function DailyChallengePage() {
     // 1. Initial Data Fetch (Lobby Context)
     useEffect(() => {
         if (!isAuthenticated) {
-            router.push('/')
+            router.push('/welcome')
             return
         }
 

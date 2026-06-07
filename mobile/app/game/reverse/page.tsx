@@ -56,7 +56,7 @@ export default function ReverseModePage() {
 
     useEffect(() => {
         if (!isAuthenticated) {
-            router.push('/')
+            router.push('/welcome')
             return
         }
 

@@ -41,6 +41,7 @@ export default function AgeGuessPage() {
     const [showHint, setShowHint] = useState(false)
     const [hasUsedHint, setHasUsedHint] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [selectedOption, setSelectedOption] = useState<number | null>(null)
     const [feedback, setFeedback] = useState<{
         type: 'spot-on' | 'close' | 'wrong' | null
         correctAge: number | null
@@ -53,7 +54,7 @@ export default function AgeGuessPage() {
 
     useEffect(() => {
         if (!isAuthenticated) {
-            router.push('/')
+            router.push('/welcome')
             return
         }
 
@@ -78,6 +79,7 @@ export default function AgeGuessPage() {
     const handleOptionSelect = (id: string | number) => {
         if (isSubmitting || feedback.type) return
         const val = Number(id)
+        setSelectedOption(val)
         setGuess(val.toString())
         handleSubmit(val)
     }
@@ -90,40 +92,43 @@ export default function AgeGuessPage() {
         const questionStartTime = useGameStore.getState().questionStartTime || Date.now()
         const responseTimeMs = Date.now() - questionStartTime
 
-        // Fire API immediately, but wait at least 400ms before revealing result
-        const [result] = await Promise.all([
-            apiClient.submitAnswer(sessionId!, {
-                question_template_id: currentQuestion.id,
-                question_index: currentQuestionIndex,
-                user_answer: { age: userGuess },
-                response_time_ms: responseTimeMs,
-                hints_used: hasUsedHint ? 1 : 0,
-            }).catch((error) => { logger.error('Failed to submit:', error); return null }),
-            new Promise(resolve => setTimeout(resolve, 400)),
-        ])
-
-        if (!result) { setIsSubmitting(false); return }
-
-        const correctAge = result.correct_answer.age
+        // Show result immediately using the correct_answer embedded in the question
+        const correctAge = currentQuestion.correct_answer?.age as number
         const diff = Math.abs(userGuess - correctAge)
 
         let type: 'spot-on' | 'close' | 'wrong' = 'wrong'
         if (diff === 0) {
             type = 'spot-on'
             sounds.play('correct')
-            await Haptics.impact({ style: ImpactStyle.Heavy })
+            Haptics.impact({ style: ImpactStyle.Heavy })
         } else if (diff <= 2) {
             type = 'close'
             sounds.play('correct')
-            await Haptics.impact({ style: ImpactStyle.Medium })
+            Haptics.impact({ style: ImpactStyle.Medium })
         } else {
             sounds.play('wrong')
-            await Haptics.impact({ style: ImpactStyle.Light })
+            Haptics.impact({ style: ImpactStyle.Light })
         }
 
-        setFeedback({ type, correctAge, scoreAwarded: result.score_awarded, diff })
-        submitAnswer(result.is_correct, result.score_awarded)
+        const isCorrect = diff === 0
+        setFeedback({ type, correctAge, scoreAwarded: 0, diff })
+        submitAnswer(isCorrect, 0)
         setIsSubmitting(false)
+
+        // Fire API in background for score tracking — don't await
+        apiClient.submitAnswer(sessionId!, {
+            question_template_id: currentQuestion.id,
+            question_index: currentQuestionIndex,
+            user_answer: { age: userGuess },
+            response_time_ms: responseTimeMs,
+            hints_used: hasUsedHint ? 1 : 0,
+        }).then((result) => {
+            if (result) {
+                // Update score with server-computed value
+                submitAnswer(result.is_correct, result.score_awarded)
+                setFeedback(prev => prev.type ? { ...prev, scoreAwarded: result.score_awarded } : prev)
+            }
+        }).catch((err) => logger.error('Failed to submit answer:', err))
     }
 
     const handleNext = () => {
@@ -132,6 +137,7 @@ export default function AgeGuessPage() {
         } else {
             setFeedback({ type: null, correctAge: null, scoreAwarded: 0, diff: 0 })
             setGuess('')
+            setSelectedOption(null)
             setShowHint(false)
             setHasUsedHint(false)
             nextQuestion()
@@ -231,7 +237,7 @@ export default function AgeGuessPage() {
                         label: opt.toString(),
                     })) || []}
                     onSelect={handleOptionSelect}
-                    selectedId={guess ? parseInt(guess, 10) : undefined}
+                    selectedId={selectedOption}
                     correctId={feedback.correctAge}
                     disabled={isSubmitting || !!feedback.type}
                     className="grid-cols-2 gap-4"

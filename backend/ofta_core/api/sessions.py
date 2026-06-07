@@ -45,6 +45,7 @@ class QuestionResponse(BaseModel):
     difficulty: int
     hints: List[str] = []
     options: List[Any] = []
+    correct_answer: Optional[Any] = None
 
 
 class SessionResponse(BaseModel):
@@ -213,36 +214,36 @@ async def start_session(
             question.celebrity_id_b = str(row['celebrity_id_b'])
             question.celebrity_name_a = row['celebrity_name_a']
             question.celebrity_name_b = row['celebrity_name_b']
+            # correct_answer: which celebrity is older (a or b)
+            dob_a = row['dob_a'] if 'dob_a' in row else None
+            dob_b = row['dob_b'] if 'dob_b' in row else None
+            if dob_a and dob_b:
+                question.correct_answer = {"older": "a" if dob_a < dob_b else "b"}
         else:
             question.celebrity_id = str(row['celebrity_id'])
             question.celebrity_name = row['celebrity_name']
-            
-            # Populate options for REVERSE modes
+
             if body.mode == "REVERSE_SIGN":
-                # For signs, we can show them ALL (12) or 9. Let's show all 12 for choice.
-                # Or if we want exactly 9 as per wireframe, we pick correct + 8 randoms.
                 correct_sign = row['star_sign']
                 decoys = [s for s in ZODIAC_SIGNS if s != correct_sign]
                 options = random.sample(decoys, 8) + [correct_sign]
                 random.shuffle(options)
                 question.options = options
-                
+                question.correct_answer = {"sign": correct_sign}
+
             elif body.mode == "REVERSE_DOB":
                 correct_year = int(row['dob_year'])
-                # Generate years around correct year
-                offsets = [-2, -1, 1, 2, 3, 4] # Example offsets for 6 options
+                offsets = [-2, -1, 1, 2, 3, 4]
                 if random.choice([True, False]):
-                    offsets = [-3, -2, -1, 1, 2, 3, 4, 5] # 9 options
-                
+                    offsets = [-3, -2, -1, 1, 2, 3, 4, 5]
                 options = [correct_year + o for o in random.sample(offsets, 8)] + [correct_year]
                 random.shuffle(options)
                 question.options = options
+                question.correct_answer = {"year": correct_year}
 
-            elif body.mode == "AGE_GUESS":
-                # Calculate age
+            elif body.mode in ("AGE_GUESS", "DAILY_CHALLENGE"):
                 dob = row['date_of_birth']
-                # Handle types - pandas Timestamp or date or str
-                if hasattr(dob, 'to_pydatetime'): 
+                if hasattr(dob, 'to_pydatetime'):
                     dob = dob.to_pydatetime().date()
                 elif isinstance(dob, datetime):
                     dob = dob.date()
@@ -251,17 +252,15 @@ async def start_session(
 
                 today = date.today()
                 correct_age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-                
-                # Distractor spread scales with difficulty:
-                # difficulty 1 → ±1yr, 2 → ±2yr, 3 → ±3yr, 4-5 → ±4yr
+
                 spread = min(row['difficulty'], 4)
                 pool = [correct_age + d for d in range(-spread, spread + 1)
                         if d != 0 and 16 <= correct_age + d <= 100]
                 distractors = random.sample(pool, min(3, len(pool)))
-
                 options = distractors + [correct_age]
                 random.shuffle(options)
                 question.options = options
+                question.correct_answer = {"age": correct_age}
         
         questions.append(question)
     

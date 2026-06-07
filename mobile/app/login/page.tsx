@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+
+import { useRouter, useSearchParams } from 'next/navigation'
 import { AppShell } from '@/components/ui/Layout'
 import { signInEmail, signUpEmail } from '@/lib/firebase'
 import { useAuthStore } from '@/store/useAuthStore'
@@ -11,10 +12,21 @@ import Link from 'next/link'
 type Mode = 'login' | 'register'
 
 export default function LoginPage() {
+    return (
+        <Suspense>
+            <LoginForm />
+        </Suspense>
+    )
+}
+
+function LoginForm() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const { setUser, registerUser } = useAuthStore()
 
-    const [mode, setMode] = useState<Mode>('login')
+    const [mode, setMode] = useState<Mode>(() =>
+        searchParams.get('mode') === 'register' ? 'register' : 'login'
+    )
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [displayName, setDisplayName] = useState('')

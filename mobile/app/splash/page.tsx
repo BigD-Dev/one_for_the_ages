@@ -28,6 +28,7 @@ export default function Splash() {
         // Timeout/Failsafe: Force redirect after 3s if nothing happens
         const timeoutId = setTimeout(() => {
             logger.warn("Splash timeout reached, redirecting to welcome")
+            document.cookie = 'ofta-launched=1; path=/; max-age=1800'
             router.push('/welcome')
         }, 3000)
 
@@ -64,6 +65,9 @@ export default function Splash() {
 
                 // Clear timeout checks
                 clearTimeout(timeoutId)
+
+                // Mark app as launched so middleware lets / through
+                document.cookie = 'ofta-launched=1; path=/; max-age=1800'
 
                 // Route
                 if (user) {
