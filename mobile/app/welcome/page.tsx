@@ -16,12 +16,6 @@ export default function Welcome() {
     const handleGuest = async () => {
         setIsLoading(true)
         try {
-            const { user } = await signInAnon()
-            setUser(user)
-            await registerUser(user)
-            router.push('/')
-        } catch (err) {
-            // Anonymous auth not enabled — use dev guest session in development
             if (process.env.NODE_ENV === 'development') {
                 const devUser = {
                     uid: 'dev_user_123',
@@ -45,10 +39,12 @@ export default function Welcome() {
                 setUser(devUser as any)
                 apiClient.setToken('DEV_TOKEN_123')
                 await registerUser(devUser as any)
-                router.push('/')
             } else {
-                router.push('/')
+                const { user } = await signInAnon()
+                setUser(user)
+                await registerUser(user)
             }
+            router.push('/')
         } finally {
             setIsLoading(false)
         }
