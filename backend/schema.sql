@@ -46,6 +46,8 @@ CREATE TABLE IF NOT EXISTS da_prod.ofta_celebrity (
     hints_hard          JSONB DEFAULT '[]'::jsonb,
     aliases             TEXT[] DEFAULT '{}',
     is_active           BOOLEAN DEFAULT TRUE,
+    career_status       TEXT NOT NULL DEFAULT 'active' CHECK (career_status IN ('active','retired','deceased')),
+    data_season         TEXT,
     created_at          TIMESTAMPTZ DEFAULT NOW(),
     updated_at          TIMESTAMPTZ DEFAULT NOW()
 );
@@ -54,6 +56,7 @@ CREATE INDEX IF NOT EXISTS idx_ofta_celebrity_category ON da_prod.ofta_celebrity
 CREATE INDEX IF NOT EXISTS idx_ofta_celebrity_active ON da_prod.ofta_celebrity(is_active);
 CREATE INDEX IF NOT EXISTS idx_ofta_celebrity_popularity ON da_prod.ofta_celebrity(popularity_score DESC);
 CREATE INDEX IF NOT EXISTS idx_ofta_celebrity_name ON da_prod.ofta_celebrity(full_name);
+CREATE INDEX IF NOT EXISTS idx_ofta_celebrity_career_status ON da_prod.ofta_celebrity(career_status);
 
 -- ================================================
 -- QUESTION TEMPLATE
