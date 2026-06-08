@@ -124,115 +124,101 @@ export default function Home() {
 
     return (
         <AppShell className="bg-canvas pb-24">
-            <div className="flex flex-col space-y-8 px-6 pt-16">
+            <div className="flex flex-col gap-4 px-5 pt-10" style={{ minHeight: 'calc(100dvh - 96px)' }}>
 
-                {/* 1️⃣ Header Section: Identity + Streak */}
-                <header className="space-y-1">
+                {/* 1️⃣ Header */}
+                <header>
                     <div className="flex items-center justify-between">
-                        <h1 className="font-serif text-2xl text-text-primary tracking-tight">
+                        <h1 className="font-serif text-xl text-text-primary tracking-tight">
                             {getGreeting()}, {user.name}
                         </h1>
                         {!isAuthenticated && (
                             <Link
                                 href="/welcome"
-                                className="font-sans text-[10px] text-primary tracking-widest uppercase border border-primary/40 rounded-sharp px-3 py-1.5 hover:bg-primary/10 transition-colors"
+                                className="font-sans text-[10px] text-primary tracking-widest uppercase border border-primary/40 rounded-sharp px-3 py-1 hover:bg-primary/10 transition-colors"
                             >
                                 Sign In
                             </Link>
                         )}
                     </div>
-                    <div className="flex items-center gap-2 font-sans text-xs tracking-widest uppercase">
+                    <div className="flex items-center gap-2 font-sans text-[10px] tracking-widest uppercase mt-0.5">
                         <span className="text-text-muted">Level {user.level}</span>
                         <span className="text-border-subtle">•</span>
-                        <div className="flex items-center gap-1.5 text-gold">
+                        <div className="flex items-center gap-1 text-gold">
                             <span>{user.streak} Day Streak</span>
                             <span className="animate-flame drop-shadow-[0_0_8px_rgba(201,162,39,0.5)]">🔥</span>
                         </div>
                     </div>
                 </header>
 
-                {/* 2️⃣ Daily Challenge (Hero Card) */}
+                {/* 2️⃣ Daily Challenge — compact horizontal */}
                 <section>
-                    <div className="relative bg-gradient-to-br from-surface-raised to-canvas border border-gold/30 rounded-sharp overflow-hidden p-6 flex flex-col gap-6">
-                        {/* Decorative glow */}
-                        <div className="absolute top-0 right-0 w-40 h-40 bg-gold/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
-
-                        {/* Top: label + description */}
-                        <div className="z-10">
-                            <div className="font-sans text-[10px] text-gold tracking-[0.3em] uppercase mb-3">
+                    <div className="relative bg-gradient-to-br from-surface-raised to-canvas border border-gold/30 rounded-sharp overflow-hidden p-4 flex items-center justify-between gap-4">
+                        <div className="absolute top-0 right-0 w-28 h-28 bg-gold/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+                        <div className="z-10 flex-1 min-w-0">
+                            <div className="font-sans text-[9px] text-gold tracking-[0.3em] uppercase mb-1">
                                 Daily Challenge
                             </div>
-                            <h3 className="font-serif text-2xl text-text-primary leading-snug mb-2">
-                                One pack. One shot.<br />Everyone competes.
+                            <h3 className="font-serif text-base text-text-primary leading-tight mb-1">
+                                One pack. One shot.
                             </h3>
-                            <p className="font-sans text-xs text-text-muted leading-relaxed">
-                                10 questions · same pack for all players today · ranked on the global leaderboard
-                            </p>
-                        </div>
-
-                        {/* Bottom: timer + button */}
-                        <div className="z-10 flex flex-col gap-3">
-                            <div className="font-sans text-[10px] text-gold tracking-[0.2em] uppercase opacity-70">
+                            <div className="font-sans text-[9px] text-gold/70 tracking-[0.15em] uppercase">
                                 Resets in {timeLeft}
                             </div>
-                            <Link href="/game/daily" className="w-full">
-                                <button className="w-full bg-primary text-white font-sans text-xs tracking-widest uppercase py-4 rounded-sharp flex items-center justify-center gap-2 active:bg-primary/80 transition-all shadow-lg shadow-black/40">
-                                    Play Today’s Challenge
-                                    <ArrowRight size={14} />
-                                </button>
-                            </Link>
                         </div>
+                        <Link href="/game/daily" className="z-10 flex-shrink-0">
+                            <button className="bg-primary text-white font-sans text-[10px] tracking-widest uppercase px-4 py-3 rounded-sharp flex items-center gap-1.5 active:bg-primary/80 transition-all whitespace-nowrap shadow-lg shadow-black/40">
+                                Play <ArrowRight size={12} />
+                            </button>
+                        </Link>
                     </div>
                 </section>
 
-                {/* 3️⃣ Game Modes Section */}
-                <section className="space-y-4">
-                    <h2 className="font-sans text-[10px] text-text-muted tracking-[0.3em] uppercase pl-1">
+                {/* 3️⃣ Game Modes — 3-column grid, fills remaining height */}
+                <section className="flex-1 flex flex-col min-h-0">
+                    <h2 className="font-sans text-[9px] text-text-muted tracking-[0.3em] uppercase mb-2">
                         Game Modes
                     </h2>
-                    <div className="flex flex-col gap-3">
-                        <ArtifactCard
-                            href="/game/age-guess"
-                            variant="wide"
-                            title="Guess the Age"
-                            subtitle="Precision Mode"
-                            icon={<Hourglass size={18} />}
-                            className="h-28 aspect-auto"
-                        />
-                        <ArtifactCard
-                            href="/game/whos-older"
-                            variant="wide"
-                            title="Who’s Older?"
-                            subtitle="Versus Mode"
-                            icon={<Scale size={18} />}
-                            className="h-28 aspect-auto"
-                        />
-                        <ArtifactCard
-                            href="/game/reverse"
-                            variant="wide"
-                            title="Zodiac"
-                            subtitle="Astrological Timeline"
-                            icon={<Star size={18} />}
-                            className="h-28 aspect-auto"
-                        />
+                    <div className="grid grid-cols-3 gap-2 flex-1">
+                        <Link href="/game/age-guess" className="bg-surface-raised border border-gold/10 rounded-sharp p-3 flex flex-col justify-between hover:border-gold/30 active:opacity-80 transition-all">
+                            <Hourglass size={14} className="text-text-muted" />
+                            <div>
+                                <div className="font-serif text-sm text-text-primary leading-tight">Guess the Age</div>
+                                <div className="font-sans text-[9px] text-text-muted tracking-wide mt-0.5">Precision</div>
+                            </div>
+                        </Link>
+                        <Link href="/game/whos-older" className="bg-surface-raised border border-gold/10 rounded-sharp p-3 flex flex-col justify-between hover:border-gold/30 active:opacity-80 transition-all">
+                            <Scale size={14} className="text-text-muted" />
+                            <div>
+                                <div className="font-serif text-sm text-text-primary leading-tight">Who’s Older?</div>
+                                <div className="font-sans text-[9px] text-text-muted tracking-wide mt-0.5">Versus</div>
+                            </div>
+                        </Link>
+                        <Link href="/game/reverse" className="bg-surface-raised border border-gold/10 rounded-sharp p-3 flex flex-col justify-between hover:border-gold/30 active:opacity-80 transition-all">
+                            <Star size={14} className="text-text-muted" />
+                            <div>
+                                <div className="font-serif text-sm text-text-primary leading-tight">Zodiac</div>
+                                <div className="font-sans text-[9px] text-text-muted tracking-wide mt-0.5">Astrology</div>
+                            </div>
+                        </Link>
                     </div>
                 </section>
 
-                {/* 4️⃣ Quick Stats Preview */}
-                <section className="border-t border-border-subtle pt-6 flex justify-between items-center text-center">
-                    <div className="space-y-1">
-                        <p className="font-sans text-[10px] text-text-muted uppercase tracking-widest">Accuracy</p>
-                        <p className="font-serif text-lg text-text-primary">{user.accuracy}%</p>
+                {/* 4️⃣ Quick Stats */}
+                <section className="border-t border-border-subtle pt-3 flex justify-between items-center text-center">
+                    <div className="space-y-0.5">
+                        <p className="font-sans text-[9px] text-text-muted uppercase tracking-widest">Accuracy</p>
+                        <p className="font-serif text-base text-text-primary">{user.accuracy}%</p>
                     </div>
-                    <div className="w-[1px] h-8 bg-border-subtle" />
-                    <div className="space-y-1">
-                        <p className="font-sans text-[10px] text-text-muted uppercase tracking-widest">Best Score</p>
-                        <p className="font-serif text-lg text-text-primary">{user.bestScore}</p>
+                    <div className="w-[1px] h-6 bg-border-subtle" />
+                    <div className="space-y-0.5">
+                        <p className="font-sans text-[9px] text-text-muted uppercase tracking-widest">Best Score</p>
+                        <p className="font-serif text-base text-text-primary">{user.bestScore}</p>
                     </div>
-                    <div className="w-[1px] h-8 bg-border-subtle" />
-                    <div className="space-y-1">
-                        <p className="font-sans text-[10px] text-text-muted uppercase tracking-widest">Streak</p>
-                        <p className="font-serif text-lg text-gold">{user.streak}</p>
+                    <div className="w-[1px] h-6 bg-border-subtle" />
+                    <div className="space-y-0.5">
+                        <p className="font-sans text-[9px] text-text-muted uppercase tracking-widest">Streak</p>
+                        <p className="font-serif text-base text-gold">{user.streak}</p>
                     </div>
                 </section>
 

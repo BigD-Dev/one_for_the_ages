@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS da_prod.ofta_celebrity (
     aliases             TEXT[] DEFAULT '{}',
     is_active           BOOLEAN DEFAULT TRUE,
     career_status       TEXT NOT NULL DEFAULT 'active' CHECK (career_status IN ('active','retired','deceased')),
-    data_season         TEXT,
+    data_period         SMALLINT,
     created_at          TIMESTAMPTZ DEFAULT NOW(),
     updated_at          TIMESTAMPTZ DEFAULT NOW()
 );
