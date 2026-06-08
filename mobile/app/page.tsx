@@ -174,31 +174,31 @@ export default function Home() {
                     </div>
                 </section>
 
-                {/* 3️⃣ Game Modes — 3-column grid, fills remaining height */}
-                <section className="flex-1 flex flex-col min-h-0">
+                {/* 3️⃣ Game Modes */}
+                <section>
                     <h2 className="font-sans text-[9px] text-text-muted tracking-[0.3em] uppercase mb-2">
                         Game Modes
                     </h2>
-                    <div className="grid grid-cols-3 gap-2 flex-1">
-                        <Link href="/game/age-guess" className="bg-surface-raised border border-gold/10 rounded-sharp p-3 flex flex-col justify-between hover:border-gold/30 active:opacity-80 transition-all">
-                            <Hourglass size={14} className="text-text-muted" />
-                            <div>
-                                <div className="font-serif text-sm text-text-primary leading-tight">Guess the Age</div>
-                                <div className="font-sans text-[9px] text-text-muted tracking-wide mt-0.5">Precision</div>
+                    <div className="grid grid-cols-3 gap-2">
+                        <Link href="/game/age-guess" className="bg-surface-raised border border-gold/10 rounded-sharp p-4 flex flex-col items-center justify-center gap-3 h-28 hover:border-gold/30 active:opacity-80 transition-all">
+                            <Hourglass size={20} className="text-primary" />
+                            <div className="text-center">
+                                <div className="font-serif text-xs text-text-primary leading-tight">Guess the Age</div>
+                                <div className="font-sans text-[8px] text-text-muted tracking-wide mt-0.5 uppercase">Precision</div>
                             </div>
                         </Link>
-                        <Link href="/game/whos-older" className="bg-surface-raised border border-gold/10 rounded-sharp p-3 flex flex-col justify-between hover:border-gold/30 active:opacity-80 transition-all">
-                            <Scale size={14} className="text-text-muted" />
-                            <div>
-                                <div className="font-serif text-sm text-text-primary leading-tight">Who’s Older?</div>
-                                <div className="font-sans text-[9px] text-text-muted tracking-wide mt-0.5">Versus</div>
+                        <Link href="/game/whos-older" className="bg-surface-raised border border-gold/10 rounded-sharp p-4 flex flex-col items-center justify-center gap-3 h-28 hover:border-gold/30 active:opacity-80 transition-all">
+                            <Scale size={20} className="text-primary" />
+                            <div className="text-center">
+                                <div className="font-serif text-xs text-text-primary leading-tight">Who’s Older?</div>
+                                <div className="font-sans text-[8px] text-text-muted tracking-wide mt-0.5 uppercase">Versus</div>
                             </div>
                         </Link>
-                        <Link href="/game/reverse" className="bg-surface-raised border border-gold/10 rounded-sharp p-3 flex flex-col justify-between hover:border-gold/30 active:opacity-80 transition-all">
-                            <Star size={14} className="text-text-muted" />
-                            <div>
-                                <div className="font-serif text-sm text-text-primary leading-tight">Zodiac</div>
-                                <div className="font-sans text-[9px] text-text-muted tracking-wide mt-0.5">Astrology</div>
+                        <Link href="/game/reverse" className="bg-surface-raised border border-gold/10 rounded-sharp p-4 flex flex-col items-center justify-center gap-3 h-28 hover:border-gold/30 active:opacity-80 transition-all">
+                            <Star size={20} className="text-primary" />
+                            <div className="text-center">
+                                <div className="font-serif text-xs text-text-primary leading-tight">Zodiac</div>
+                                <div className="font-sans text-[8px] text-text-muted tracking-wide mt-0.5 uppercase">Astrology</div>
                             </div>
                         </Link>
                     </div>
