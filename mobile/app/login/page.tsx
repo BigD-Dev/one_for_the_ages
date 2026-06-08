@@ -40,13 +40,39 @@ function LoginForm() {
         setIsLoading(true)
 
         try {
+            if (process.env.NODE_ENV === 'development' && email === 'dev@ofta.com') {
+                const devUser = {
+                    uid: 'dev_user_123',
+                    email: 'dev@ofta.com',
+                    displayName: displayName || 'Dev Player',
+                    emailVerified: true,
+                    isAnonymous: false,
+                    metadata: {},
+                    providerData: [],
+                    refreshToken: '',
+                    tenantId: null,
+                    delete: async () => {},
+                    getIdToken: async () => 'DEV_TOKEN_123',
+                    getIdTokenResult: async () => ({} as any),
+                    reload: async () => {},
+                    toJSON: () => ({}),
+                    phoneNumber: null,
+                    photoURL: null,
+                    providerId: 'firebase',
+                }
+                setUser(devUser as any)
+                import('@/lib/api-client').then(({ apiClient }) => apiClient.setToken('DEV_TOKEN_123'))
+                await registerUser(devUser as any)
+                router.push('/')
+                return
+            }
+
             if (mode === 'login') {
                 const { user } = await signInEmail(email, password)
                 setUser(user)
                 await registerUser(user)
             } else {
                 const { user } = await signUpEmail(email, password)
-                // Update display name via Firebase profile (optional, handled server side)
                 setUser(user)
                 await registerUser({ ...user, displayName: displayName || null } as any)
             }

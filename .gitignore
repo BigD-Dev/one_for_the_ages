@@ -129,6 +129,7 @@ build/
 # ────────────────────────────────────────────────
 gcp-key.json
 service-account-key.json
+*-firebase-key.json
 .firebase/
 firebase-debug.log
 firestore-debug.log
