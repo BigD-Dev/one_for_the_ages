@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
 import { logger } from '@/lib/logger'
-import { signOut } from '@/lib/firebase'
+import { signOut, auth } from '@/lib/firebase'
+import { reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth'
 import { AppShell } from '@/components/ui/Layout'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -20,7 +21,10 @@ export default function SettingsPage() {
     const [country, setCountry] = useState(oftaUser?.country || '')
     const [isSaving, setIsSaving] = useState(false)
     const [saveMsg, setSaveMsg] = useState<string | null>(null)
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [deleteStep, setDeleteStep] = useState<null | 'confirm' | 'password'>(null)
+    const [deletePassword, setDeletePassword] = useState('')
+    const [deleteError, setDeleteError] = useState<string | null>(null)
+    const [isDeleting, setIsDeleting] = useState(false)
 
     const handleSaveProfile = async () => {
         setIsSaving(true)
@@ -46,13 +50,28 @@ export default function SettingsPage() {
     }
 
     const handleDeleteAccount = async () => {
+        setDeleteError(null)
+        setIsDeleting(true)
         try {
+            const currentUser = auth.currentUser
+            if (currentUser && !currentUser.isAnonymous) {
+                const credential = EmailAuthProvider.credential(currentUser.email!, deletePassword)
+                await reauthenticateWithCredential(currentUser, credential)
+            }
             await apiClient.deleteAccount()
             await signOut()
             logout()
             router.push('/')
-        } catch (error) {
+        } catch (error: any) {
             logger.error('Delete failed:', error)
+            const code = error?.code || ''
+            if (code === 'auth/wrong-password' || code === 'auth/invalid-credential') {
+                setDeleteError('Incorrect password. Please try again.')
+            } else {
+                setDeleteError('Something went wrong. Please try again.')
+            }
+        } finally {
+            setIsDeleting(false)
         }
     }
 
@@ -138,37 +157,66 @@ export default function SettingsPage() {
                 </Button>
 
                 <button
-                    onClick={() => setShowDeleteConfirm(true)}
+                    onClick={() => { setDeleteStep('confirm'); setDeleteError(null); setDeletePassword('') }}
                     className="w-full py-4 px-6 rounded-sharp text-red-400 font-medium border border-border-subtle bg-surface active:opacity-80 transition-opacity duration-150"
                 >
                     Delete Account
                 </button>
             </div>
 
-            {/* Delete Confirmation Modal */}
-            {showDeleteConfirm && (
-                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-6">
-                    <Card className="p-6 max-w-sm w-full">
-                        <h3 className="text-xl font-bold text-red-400 mb-2 font-serif">Delete Account?</h3>
-                        <p className="text-text-muted mb-6 text-sm">
-                            This will permanently delete your account, stats, and game history.
-                            This cannot be undone.
-                        </p>
-                        <div className="space-y-3">
-                            <button
-                                onClick={handleDeleteAccount}
-                                className="w-full bg-red-600 text-white font-bold py-3 rounded-sharp active:opacity-80 transition-opacity duration-150"
-                            >
-                                Yes, Delete Everything
-                            </button>
-                            <Button
-                                variant="secondary"
-                                onClick={() => setShowDeleteConfirm(false)}
-                                className="w-full"
-                            >
-                                Cancel
-                            </Button>
+            {/* Step 1: Confirm */}
+            {deleteStep === 'confirm' && (
+                <div className="fixed inset-0 bg-black/80 flex items-end justify-center z-50 p-6 pb-10">
+                    <Card className="p-6 w-full max-w-sm space-y-4">
+                        <div className="text-center space-y-2">
+                            <h3 className="text-xl font-bold text-red-400 font-serif">Delete Account?</h3>
+                            <p className="text-text-muted text-sm">
+                                This will permanently delete your account, all stats, and game history. This cannot be undone.
+                            </p>
                         </div>
+                        <button
+                            onClick={() => setDeleteStep('password')}
+                            className="w-full bg-red-600/10 border border-red-600/40 text-red-400 font-bold py-4 rounded-sharp active:opacity-80 transition-opacity text-sm tracking-widest uppercase"
+                        >
+                            Yes, delete my account
+                        </button>
+                        <Button variant="secondary" onClick={() => setDeleteStep(null)} className="w-full">
+                            Cancel
+                        </Button>
+                    </Card>
+                </div>
+            )}
+
+            {/* Step 2: Password confirmation */}
+            {deleteStep === 'password' && (
+                <div className="fixed inset-0 bg-black/80 flex items-end justify-center z-50 p-6 pb-10">
+                    <Card className="p-6 w-full max-w-sm space-y-4">
+                        <div className="text-center space-y-2">
+                            <h3 className="text-xl font-bold text-text-primary font-serif">Confirm with password</h3>
+                            <p className="text-text-muted text-sm">
+                                Enter your password one last time to permanently delete your account.
+                            </p>
+                        </div>
+                        <Input
+                            type="password"
+                            value={deletePassword}
+                            onChange={(e) => { setDeletePassword(e.target.value); setDeleteError(null) }}
+                            placeholder="Your password"
+                            autoFocus
+                        />
+                        {deleteError && (
+                            <p className="text-xs text-red-400 text-center">{deleteError}</p>
+                        )}
+                        <button
+                            onClick={handleDeleteAccount}
+                            disabled={!deletePassword || isDeleting}
+                            className="w-full bg-red-600 text-white font-bold py-4 rounded-sharp active:opacity-80 disabled:opacity-40 transition-opacity text-sm tracking-widest uppercase"
+                        >
+                            {isDeleting ? 'Deleting...' : 'Delete my account'}
+                        </button>
+                        <Button variant="secondary" onClick={() => setDeleteStep('confirm')} className="w-full">
+                            Back
+                        </Button>
                     </Card>
                 </div>
             )}

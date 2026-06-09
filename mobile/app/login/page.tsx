@@ -4,7 +4,8 @@ import { useState, Suspense } from 'react'
 
 import { useRouter, useSearchParams } from 'next/navigation'
 import { AppShell } from '@/components/ui/Layout'
-import { signInEmail, signUpEmail } from '@/lib/firebase'
+import { signInEmail, signUpEmail, auth } from '@/lib/firebase'
+import { updateProfile } from 'firebase/auth'
 import { useAuthStore } from '@/store/useAuthStore'
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import Link from 'next/link'
@@ -73,8 +74,11 @@ function LoginForm() {
                 await registerUser(user)
             } else {
                 const { user } = await signUpEmail(email, password)
+                if (displayName) {
+                    await updateProfile(user, { displayName })
+                }
                 setUser(user)
-                await registerUser({ ...user, displayName: displayName || null } as any)
+                await registerUser(user)
             }
             router.push('/')
         } catch (err: any) {

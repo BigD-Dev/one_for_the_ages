@@ -124,7 +124,7 @@ export default function ProfilePage() {
                 </div>
 
                 <h2 className="text-xl font-bold text-text-primary font-serif mb-1">
-                    {oftaUser?.display_name || user?.displayName || 'Anonymous Player'}
+                    {oftaUser?.display_name || user?.displayName || oftaUser?.email?.split('@')[0] || user?.email?.split('@')[0] || 'Player'}
                 </h2>
                 <div className="flex flex-col items-center w-full max-w-[200px] gap-2">
                     <p className="text-xs text-primary tracking-widest uppercase font-bold">

@@ -20,7 +20,7 @@ interface UserStats {
 }
 
 export default function Home() {
-    const { user: authUser, isAuthenticated, setUser, setOftaUser } = useAuthStore()
+    const { user: authUser, oftaUser, isAuthenticated, setUser, setOftaUser } = useAuthStore()
     const [currentTime, setCurrentTime] = useState(new Date())
     const [timeLeft, setTimeLeft] = useState('')
     const [stats, setStats] = useState<UserStats | null>(null)
@@ -115,7 +115,7 @@ export default function Home() {
 
     const levelInfo = calculateLevel(stats?.lifetime_score || 0)
     const user = {
-        name: authUser?.displayName || 'Challenger',
+        name: oftaUser?.display_name || authUser?.displayName || oftaUser?.email?.split('@')[0] || 'Challenger',
         level: levelInfo.level,
         streak: stats?.current_streak || 0,
         accuracy: stats ? Math.round(stats.accuracy_pct) : 0,

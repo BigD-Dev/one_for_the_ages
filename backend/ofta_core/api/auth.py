@@ -5,7 +5,7 @@ Authentication endpoints for OFTA
 
 import os
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
 import uuid
@@ -35,6 +35,8 @@ class RegisterRequest(BaseModel):
 
 
 class UserResponse(BaseModel):
+    model_config = {"from_attributes": True}
+
     id: str
     firebase_uid: Optional[str]
     display_name: Optional[str]
@@ -44,6 +46,11 @@ class UserResponse(BaseModel):
     auth_provider: str
     created_at_tms: datetime
     last_active_at_tms: datetime
+
+    @field_validator('id', mode='before')
+    @classmethod
+    def coerce_uuid(cls, v):
+        return str(v) if v is not None else v
 
 
 # ────────────────────────────────────────────────
