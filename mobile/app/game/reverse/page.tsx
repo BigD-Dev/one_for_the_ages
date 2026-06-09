@@ -61,24 +61,28 @@ export default function ReverseModePage() {
             return
         }
 
+        let cancelled = false
+
         const initGame = async () => {
             try {
-                // For MVP, we'll alternate or pick based on search params? Let's default to SIGN for now
-                // but read it from URL if possible.
                 const searchParams = new URLSearchParams(window.location.search)
                 const requestedMode = (searchParams.get('type') === 'year' ? 'REVERSE_DOB' : 'REVERSE_SIGN') as 'REVERSE_SIGN' | 'REVERSE_DOB'
                 setMode(requestedMode)
 
                 const session = await apiClient.startSession({ mode: requestedMode })
+                if (cancelled) return
                 startGame(session.id, requestedMode, session.questions)
                 setIsLoading(false)
             } catch (error) {
-                logger.error('Failed to start game:', error)
-                router.push('/')
+                if (!cancelled) {
+                    logger.error('Failed to start game:', error)
+                    router.push('/')
+                }
             }
         }
 
         initGame()
+        return () => { cancelled = true }
     }, [isAuthenticated, authReady, router, startGame])
 
     // Generate options based on mode

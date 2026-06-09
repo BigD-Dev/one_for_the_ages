@@ -58,21 +58,29 @@ export default function WhosOlderPage() {
             return
         }
 
+        let cancelled = false
+
         const initGame = async () => {
             try {
                 const session = await apiClient.startSession({ mode: 'WHO_OLDER' })
+                if (cancelled) return
                 startGame(session.id, 'WHO_OLDER', session.questions)
                 setIsLoading(false)
                 startTimer()
             } catch (error) {
-                logger.error('Failed to start game:', error)
-                router.push('/')
+                if (!cancelled) {
+                    logger.error('Failed to start game:', error)
+                    router.push('/')
+                }
             }
         }
 
         initGame()
 
-        return () => stopTimer()
+        return () => {
+            cancelled = true
+            stopTimer()
+        }
     }, [isAuthenticated, authReady, router, startGame])
 
     // Timer logic

@@ -59,18 +59,24 @@ export default function AgeGuessPage() {
             return
         }
 
+        let cancelled = false
+
         const initGame = async () => {
             try {
                 const session = await apiClient.startSession({ mode: 'AGE_GUESS' })
+                if (cancelled) return
                 startGame(session.id, 'AGE_GUESS', session.questions)
                 setIsLoading(false)
             } catch (error) {
-                logger.error('Failed to start game:', error)
-                router.push('/')
+                if (!cancelled) {
+                    logger.error('Failed to start game:', error)
+                    router.push('/')
+                }
             }
         }
 
         initGame()
+        return () => { cancelled = true }
     }, [isAuthenticated, authReady, router, startGame])
 
     const handleOptionSelect = (id: string | number) => {

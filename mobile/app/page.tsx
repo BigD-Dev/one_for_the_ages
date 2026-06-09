@@ -20,7 +20,7 @@ interface UserStats {
 }
 
 export default function Home() {
-    const { user: authUser, oftaUser, isAuthenticated, setUser, setOftaUser } = useAuthStore()
+    const { user: authUser, oftaUser, isAuthenticated, authReady, setUser, setOftaUser } = useAuthStore()
     const [currentTime, setCurrentTime] = useState(new Date())
     const [timeLeft, setTimeLeft] = useState('')
     const [stats, setStats] = useState<UserStats | null>(null)
@@ -76,10 +76,10 @@ export default function Home() {
     }, [isAuthenticated, setUser, setOftaUser])
 
     useEffect(() => {
-        if (isAuthenticated) {
+        if (authReady && isAuthenticated) {
             apiClient.getUserStats().then(setStats).catch((err) => logger.warn('Failed to load stats:', err))
         }
-    }, [isAuthenticated])
+    }, [isAuthenticated, authReady])
 
     // 1. Time-based greeting logic
     const getGreeting = () => {

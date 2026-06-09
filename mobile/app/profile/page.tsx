@@ -27,7 +27,7 @@ interface UserStats {
 
 export default function ProfilePage() {
     const router = useRouter()
-    const { isAuthenticated, oftaUser, user, logout } = useAuthStore()
+    const { isAuthenticated, authReady, oftaUser, user, logout } = useAuthStore()
     const [stats, setStats] = useState<UserStats | null>(null)
     const [isLoading, setIsLoading] = useState(true)
 
@@ -39,6 +39,7 @@ export default function ProfilePage() {
     })
 
     useEffect(() => {
+        if (!authReady) return
         if (!isAuthenticated) {
             router.push('/welcome')
             return
@@ -50,7 +51,7 @@ export default function ProfilePage() {
         if (savedSettings) {
             setSettings(JSON.parse(savedSettings))
         }
-    }, [isAuthenticated])
+    }, [isAuthenticated, authReady])
 
     const loadProfile = async () => {
         try {

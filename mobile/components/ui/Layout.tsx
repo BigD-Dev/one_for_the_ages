@@ -20,7 +20,6 @@ export const AppShell = ({ children, className = '', hideLogo = false }: AppShel
                         width={54}
                         height={20}
                         className="opacity-50"
-                        style={{ width: 54, height: 'auto' }}
                         priority
                     />
                 </div>
