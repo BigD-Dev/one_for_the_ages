@@ -78,7 +78,7 @@ export default function SettingsPage() {
     return (
         <AppShell>
             {/* Header */}
-            <header className="flex items-center justify-between mb-8">
+            <header className="flex items-center justify-between mb-8 pt-10">
                 <Button variant="ghost" onClick={() => router.back()} className="text-text-muted">
                     <ArrowLeft size={18} className="mr-1" /> Back
                 </Button>

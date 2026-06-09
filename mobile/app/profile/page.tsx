@@ -99,7 +99,7 @@ export default function ProfilePage() {
     const accuracy = stats?.accuracy_pct ? Math.round(stats.accuracy_pct) : 0
 
     return (
-        <AppShell className="bg-canvas pb-24 px-6 pt-6 font-sans">
+        <AppShell className="bg-canvas pb-24 px-6 pt-10 font-sans">
             {/* Header: Back Button */}
             <header className="flex items-center justify-between mb-8">
                 <button

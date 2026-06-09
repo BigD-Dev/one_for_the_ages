@@ -146,6 +146,8 @@ async def start_session(
             JOIN ofta_prod.ofta_person ca ON qt.person_id_a = ca.id
             JOIN ofta_prod.ofta_person cb ON qt.person_id_b = cb.id
             WHERE qt.mode = 'WHO_OLDER' AND qt.is_active = TRUE
+              AND ca.image_url IS NOT NULL AND ca.image_url != ''
+              AND cb.image_url IS NOT NULL AND cb.image_url != ''
             ORDER BY RANDOM()
             LIMIT :limit
             """,
@@ -169,6 +171,7 @@ async def start_session(
             FROM ofta_prod.ofta_question_template qt
             JOIN ofta_prod.ofta_person c ON qt.person_id = c.id
             WHERE qt.mode = :mode AND qt.is_active = TRUE
+              AND c.image_url IS NOT NULL AND c.image_url != ''
             ORDER BY RANDOM()
             LIMIT :limit
             """,
