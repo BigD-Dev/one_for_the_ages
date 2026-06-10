@@ -104,7 +104,7 @@ function LoginForm() {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-primary/10 via-canvas to-canvas pointer-events-none" />
 
             {/* Back */}
-            <Link href="/welcome" className="flex items-center gap-2 text-text-muted hover:text-text-primary transition-colors mt-4 w-fit z-10">
+            <Link href="/welcome" className="flex items-center gap-2 text-text-muted hover:text-text-primary transition-colors mt-10 w-fit z-10">
                 <ArrowLeft size={16} />
                 <span className="font-sans text-xs tracking-widest uppercase">Back</span>
             </Link>

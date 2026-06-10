@@ -124,7 +124,7 @@ export default function Home() {
 
     return (
         <AppShell className="bg-canvas pb-24">
-            <div className="flex flex-col gap-4 px-5 pt-10" style={{ minHeight: 'calc(100dvh - 96px)' }}>
+            <div className="flex flex-col gap-4 px-5 pt-14" style={{ minHeight: 'calc(100dvh - 96px)' }}>
 
                 {/* 1️⃣ Header */}
                 <header>
@@ -179,27 +179,30 @@ export default function Home() {
                     <h2 className="font-sans text-[9px] text-text-muted tracking-[0.3em] uppercase mb-2">
                         Game Modes
                     </h2>
-                    <div className="grid grid-cols-3 gap-2">
-                        <Link href="/game/age-guess" className="bg-surface-raised border border-gold/10 rounded-sharp p-4 flex flex-col items-center justify-center gap-3 h-28 hover:border-gold/30 active:opacity-80 transition-all">
-                            <Hourglass size={20} className="text-primary" />
-                            <div className="text-center">
-                                <div className="font-serif text-xs text-text-primary leading-tight">Guess the Age</div>
-                                <div className="font-sans text-[8px] text-text-muted tracking-wide mt-0.5 uppercase">Precision</div>
+                    <div className="flex flex-col gap-2">
+                        <Link href="/game/age-guess" className="bg-surface-raised border border-gold/10 rounded-sharp px-5 py-4 flex items-center gap-4 hover:border-gold/30 active:opacity-80 transition-all">
+                            <Hourglass size={20} className="text-primary shrink-0" />
+                            <div className="flex-1">
+                                <div className="font-serif text-sm text-text-primary">Guess the Age</div>
+                                <div className="font-sans text-[9px] text-text-muted tracking-wide uppercase mt-0.5">Precision</div>
                             </div>
+                            <ArrowRight size={14} className="text-text-muted/40 shrink-0" />
                         </Link>
-                        <Link href="/game/whos-older" className="bg-surface-raised border border-gold/10 rounded-sharp p-4 flex flex-col items-center justify-center gap-3 h-28 hover:border-gold/30 active:opacity-80 transition-all">
-                            <Scale size={20} className="text-primary" />
-                            <div className="text-center">
-                                <div className="font-serif text-xs text-text-primary leading-tight">Who’s Older?</div>
-                                <div className="font-sans text-[8px] text-text-muted tracking-wide mt-0.5 uppercase">Versus</div>
+                        <Link href="/game/whos-older" className="bg-surface-raised border border-gold/10 rounded-sharp px-5 py-4 flex items-center gap-4 hover:border-gold/30 active:opacity-80 transition-all">
+                            <Scale size={20} className="text-primary shrink-0" />
+                            <div className="flex-1">
+                                <div className="font-serif text-sm text-text-primary">Who’s Older?</div>
+                                <div className="font-sans text-[9px] text-text-muted tracking-wide uppercase mt-0.5">Versus</div>
                             </div>
+                            <ArrowRight size={14} className="text-text-muted/40 shrink-0" />
                         </Link>
-                        <Link href="/game/reverse" className="bg-surface-raised border border-gold/10 rounded-sharp p-4 flex flex-col items-center justify-center gap-3 h-28 hover:border-gold/30 active:opacity-80 transition-all">
-                            <Star size={20} className="text-primary" />
-                            <div className="text-center">
-                                <div className="font-serif text-xs text-text-primary leading-tight">Zodiac</div>
-                                <div className="font-sans text-[8px] text-text-muted tracking-wide mt-0.5 uppercase">Astrology</div>
+                        <Link href="/game/reverse" className="bg-surface-raised border border-gold/10 rounded-sharp px-5 py-4 flex items-center gap-4 hover:border-gold/30 active:opacity-80 transition-all">
+                            <Star size={20} className="text-primary shrink-0" />
+                            <div className="flex-1">
+                                <div className="font-serif text-sm text-text-primary">Zodiac</div>
+                                <div className="font-sans text-[9px] text-text-muted tracking-wide uppercase mt-0.5">Astrology</div>
                             </div>
+                            <ArrowRight size={14} className="text-text-muted/40 shrink-0" />
                         </Link>
                     </div>
                 </section>

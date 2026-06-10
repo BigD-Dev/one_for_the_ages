@@ -49,6 +49,7 @@ export default function DailyChallengePage() {
     // Game Logic State
     const [guess, setGuess] = useState('')
     const [feedback, setFeedback] = useState<string | null>(null)
+    const [inputError, setInputError] = useState<string | null>(null)
     const [showHint, setShowHint] = useState(false)
     const [todayDate] = useState(() => new Date().toISOString().split('T')[0])
 
@@ -138,9 +139,10 @@ export default function DailyChallengePage() {
 
         const userGuess = parseInt(guess, 10)
         if (isNaN(userGuess) || userGuess < 0 || userGuess > 120) {
-            setFeedback('Enter a valid age.')
+            setInputError('Enter a valid age.')
             return
         }
+        setInputError(null)
 
         try {
             // we use the store's track of startTime
@@ -211,7 +213,7 @@ export default function DailyChallengePage() {
     if (alreadyCompleted) {
         return (
             <AppShell className="bg-canvas flex flex-col p-8 md:p-12">
-                <header className="mb-12 text-center">
+                <header className="mb-12 text-center pt-10">
                     <h1 className="font-montserrat font-bold text-[10px] text-text-muted tracking-[0.4em] uppercase">
                         DAILY CHALLENGE
                     </h1>
@@ -299,6 +301,12 @@ export default function DailyChallengePage() {
                         </p>
                     </div>
                 </header>
+                <button
+                    onClick={() => router.push('/')}
+                    className="absolute top-6 right-6 z-10 text-text-muted/30 hover:text-text-muted transition-colors"
+                >
+                    <ArrowLeft size={18} />
+                </button>
 
                 <main className="flex-1 flex flex-col items-center justify-center space-y-12">
                     <div className="text-center space-y-6">
@@ -316,13 +324,19 @@ export default function DailyChallengePage() {
                             inputMode="numeric"
                             pattern="[0-9]*"
                             value={guess}
-                            onChange={(e) => setGuess(e.target.value)}
+                            onChange={(e) => { setGuess(e.target.value); setInputError(null) }}
                             placeholder="--"
                             className="bg-transparent border-b-2 border-white/5 rounded-none text-center text-6xl font-serif text-gold focus:border-primary transition-all placeholder:text-white/5 h-28 p-0"
                             disabled={!!feedback}
                             autoFocus
                             onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
                         />
+
+                        {inputError && (
+                            <p className="text-center font-montserrat font-bold text-[10px] tracking-[0.2em] uppercase text-red-400/70">
+                                {inputError}
+                            </p>
+                        )}
 
                         {feedback ? (
                             <div className="py-2 text-center animate-fade-in">
@@ -368,7 +382,7 @@ export default function DailyChallengePage() {
     return (
         <AppShell className="bg-canvas flex flex-col p-8 md:p-12">
             {/* 1️⃣ Back Button */}
-            <header className="flex items-center mb-12">
+            <header className="flex items-center mb-12 pt-10">
                 <button
                     onClick={() => router.push('/')}
                     className="flex items-center gap-3 text-text-muted hover:text-text-primary transition-colors group"
