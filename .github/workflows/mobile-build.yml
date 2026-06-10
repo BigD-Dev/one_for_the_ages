@@ -2,13 +2,10 @@ name: Mobile Build
 
 on:
   push:
-    branches: [master]
-    paths:
-      - 'mobile/**'
-  pull_request:
-    branches: [master]
-    paths:
-      - 'mobile/**'
+    tags:
+      - '*.*.*-dev'
+      - '*.*.*-sandbox'
+      - '*.*.*'
 
 jobs:
   build-web:
