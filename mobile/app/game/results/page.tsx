@@ -17,8 +17,6 @@ export default function ResultsPage() {
     const [showConfetti, setShowConfetti] = useState(false)
     const [animatedScore, setAnimatedScore] = useState(0)
 
-    // Fallback if accessed directly (dev) or error state
-    // Fallback if accessed directly (dev) or error state
     const result = lastGameResult || {
         totalScore: currentScore,
         questionsCount: 10,

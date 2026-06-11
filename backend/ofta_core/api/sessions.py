@@ -175,7 +175,8 @@ async def start_session(
                 SELECT qt.id, qt.mode, qt.person_id_a, qt.person_id_b, qt.difficulty,
                        ca.full_name AS person_name_a, cb.full_name AS person_name_b,
                        ca.image_url AS person_image_url_a, cb.image_url AS person_image_url_b,
-                       ca.hints_easy AS hints_a, cb.hints_easy AS hints_b
+                       ca.hints_easy AS hints_a, cb.hints_easy AS hints_b,
+                       ca.date_of_birth AS dob_a, cb.date_of_birth AS dob_b
                 FROM ofta_prod.ofta_question_template qt
                 JOIN ofta_prod.ofta_person ca ON qt.person_id_a = ca.id
                 JOIN ofta_prod.ofta_person cb ON qt.person_id_b = cb.id
@@ -285,11 +286,22 @@ async def start_session(
             question.person_name_b = row['person_name_b']
             question.person_image_url_a = row.get('person_image_url_a')
             question.person_image_url_b = row.get('person_image_url_b')
-            # correct_answer: which person is older (a or b)
-            dob_a = row['dob_a'] if 'dob_a' in row else None
-            dob_b = row['dob_b'] if 'dob_b' in row else None
-            if dob_a and dob_b:
-                question.correct_answer = {"older": "a" if dob_a < dob_b else "b"}
+            dob_a = row.get('dob_a')
+            dob_b = row.get('dob_b')
+            if dob_a is not None and dob_b is not None:
+                if isinstance(dob_a, str):
+                    dob_a = datetime.strptime(dob_a, '%Y-%m-%d').date()
+                elif hasattr(dob_a, 'to_pydatetime'):
+                    dob_a = dob_a.to_pydatetime().date()
+                if isinstance(dob_b, str):
+                    dob_b = datetime.strptime(dob_b, '%Y-%m-%d').date()
+                elif hasattr(dob_b, 'to_pydatetime'):
+                    dob_b = dob_b.to_pydatetime().date()
+                question.correct_answer = {
+                    "choice": "A" if dob_a < dob_b else "B",
+                    "year_a": dob_a.year,
+                    "year_b": dob_b.year,
+                }
         else:
             question.person_id = str(row['person_id'])
             question.person_name = row['person_name']
@@ -305,10 +317,8 @@ async def start_session(
 
             elif body.mode == "REVERSE_DOB":
                 correct_year = int(row['dob_year'])
-                offsets = [-2, -1, 1, 2, 3, 4]
-                if random.choice([True, False]):
-                    offsets = [-3, -2, -1, 1, 2, 3, 4, 5]
-                options = [correct_year + o for o in random.sample(offsets, 8)] + [correct_year]
+                offsets = [-3, -2, -1, 1, 2, 3, 4, 5]
+                options = [correct_year + o for o in offsets] + [correct_year]
                 random.shuffle(options)
                 question.options = options
                 question.correct_answer = {"year": correct_year}
@@ -469,7 +479,11 @@ async def submit_answer(
         
         is_correct = user_choice == correct_choice
         score_awarded = 100 if is_correct else 0
-        correct_answer = {"choice": correct_choice}
+        correct_answer = {
+            "choice": correct_choice,
+            "year_a": dob_a.year if hasattr(dob_a, 'year') else None,
+            "year_b": dob_b.year if hasattr(dob_b, 'year') else None,
+        }
 
     elif mode == "REVERSE_SIGN":
         correct_sign = question['star_sign']

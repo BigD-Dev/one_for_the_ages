@@ -17,7 +17,7 @@ import { Lightbulb, ArrowLeft, Clock, Flame, ArrowRight } from 'lucide-react'
 
 export default function DailyChallengePage() {
     const router = useRouter()
-    const { isAuthenticated } = useAuthStore()
+    const { isAuthenticated, authReady } = useAuthStore()
     const {
         sessionId,
         questions,
@@ -58,6 +58,7 @@ export default function DailyChallengePage() {
 
     // 1. Initial Data Fetch (Lobby Context)
     useEffect(() => {
+        if (!authReady) return
         if (!isAuthenticated) {
             router.push('/welcome')
             return
@@ -92,7 +93,7 @@ export default function DailyChallengePage() {
         }
 
         fetchInitData()
-    }, [isAuthenticated, router, todayDate])
+    }, [isAuthenticated, authReady, router, todayDate])
 
     // 2. Countdown Timer Logic
     useEffect(() => {
@@ -190,14 +191,13 @@ export default function DailyChallengePage() {
 
     const handleEndGame = async () => {
         try {
-            await apiClient.endSession(sessionId!)
-            await apiClient.submitDailyScore(todayDate)
-            endGame()
-            router.push('/game/results')
+            const result = await apiClient.endSession(sessionId!)
+            endGame(result)
         } catch (error) {
-            logger.error('Failed to end:', error)
-            router.push('/game/results')
+            logger.error('Failed to end session:', error)
         }
+        apiClient.submitDailyScore(todayDate).catch(err => logger.warn('Daily score submit failed:', err))
+        router.push('/game/results')
     }
 
     // --- Loading State ---

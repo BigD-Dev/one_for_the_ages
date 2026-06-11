@@ -165,10 +165,10 @@ export default function ReverseModePage() {
         try {
             const result = await apiClient.endSession(sessionId!)
             endGame(result)
-            router.push('/game/results')
         } catch (error) {
             logger.error('Failed to end game:', error)
         }
+        router.push('/game/results')
     }
 
     if (isLoading || !currentQuestion) {
