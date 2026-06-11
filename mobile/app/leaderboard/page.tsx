@@ -23,7 +23,7 @@ interface LeaderboardEntry {
 
 export default function LeaderboardPage() {
     const router = useRouter()
-    const { isAuthenticated } = useAuthStore()
+    const { isAuthenticated, authReady } = useAuthStore()
 
     const [activeTab, setActiveTab] = useState<'daily' | 'alltime'>('daily')
     const [dailyEntries, setDailyEntries] = useState<LeaderboardEntry[]>([])
@@ -34,8 +34,13 @@ export default function LeaderboardPage() {
     const [myRank, setMyRank] = useState<number | null>(null)
 
     useEffect(() => {
+        if (!authReady) return
+        if (!isAuthenticated) {
+            router.push('/welcome')
+            return
+        }
         loadLeaderboard()
-    }, [activeTab, selectedDate])
+    }, [authReady, isAuthenticated, activeTab, selectedDate])
 
     const loadLeaderboard = async () => {
         setIsLoading(true)

@@ -154,6 +154,8 @@ async def start_session(
         placeholders = ", ".join(f"'{c}'" for c in db_cats)
         return f"AND {alias}.primary_category IN ({placeholders})"
 
+    daily_date_seed = body.pack_date or date.today().strftime('%Y-%m-%d')
+
     def _fetch(mode: str, limit: int, pct_min: float, pct_max: float) -> "pd.DataFrame":
         if mode == "WHO_OLDER":
             return db.select_df(
@@ -192,6 +194,11 @@ async def start_session(
                 """,
                 params={"limit": limit, "pct_min": pct_min, "pct_max": pct_max},
             )
+        is_daily = mode == "DAILY_CHALLENGE"
+        order_clause = "HASHTEXT(qt.id::text || :date_seed)" if is_daily else "RANDOM()"
+        params: dict = {"mode": mode, "limit": limit, "pct_min": pct_min, "pct_max": pct_max}
+        if is_daily:
+            params["date_seed"] = daily_date_seed
         return db.select_df(
             f"""
             WITH pool AS (
@@ -219,9 +226,9 @@ async def start_session(
               AND c.image_url IS NOT NULL AND c.image_url != ''
               AND r.pop_pct >= :pct_min AND r.pop_pct < :pct_max
               {_cat_filter('c')}
-            ORDER BY RANDOM() LIMIT :limit
+            ORDER BY {order_clause} LIMIT :limit
             """,
-            params={"mode": mode, "limit": limit, "pct_min": pct_min, "pct_max": pct_max},
+            params=params,
         )
 
     diff = body.difficulty or "easy"

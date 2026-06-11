@@ -17,7 +17,7 @@ import { getDbCategories } from '@/lib/categories'
 import { apiClient } from '@/lib/api-client'
 import { logger } from '@/lib/logger'
 import { sounds } from '@/lib/sounds'
-import { Haptics, ImpactStyle } from '@capacitor/haptics'
+import { haptics, ImpactStyle } from '@/lib/haptics'
 import { ArrowLeft, Clock, Info, Pause, Play, X, CheckCircle, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 
@@ -111,14 +111,14 @@ export default function AgeGuessPage() {
         if (diff === 0) {
             type = 'spot-on'
             sounds.play('correct')
-            Haptics.impact({ style: ImpactStyle.Heavy })
+            haptics.impact(ImpactStyle.Heavy)
         } else if (diff <= 2) {
             type = 'close'
             sounds.play('correct')
-            Haptics.impact({ style: ImpactStyle.Medium })
+            haptics.impact(ImpactStyle.Medium)
         } else {
             sounds.play('wrong')
-            Haptics.impact({ style: ImpactStyle.Light })
+            haptics.impact(ImpactStyle.Light)
         }
 
         setFeedback({ type, correctAge, scoreAwarded: 0, diff })

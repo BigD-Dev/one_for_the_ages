@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { AppShell } from '@/components/ui/Layout'
-import { ArtifactCard } from '@/components/ArtifactCard'
 import { BottomNav } from '@/components/ui/BottomNav'
 import { Hourglass, Scale, Star, ArrowRight, SlidersHorizontal } from 'lucide-react'
 import Link from 'next/link'

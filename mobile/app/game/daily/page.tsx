@@ -12,7 +12,7 @@ import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
 import { logger } from '@/lib/logger'
 import { sounds } from '@/lib/sounds'
-import { Haptics, ImpactStyle } from '@capacitor/haptics'
+import { haptics, ImpactStyle } from '@/lib/haptics'
 import { Lightbulb, ArrowLeft, Clock, Flame, ArrowRight } from 'lucide-react'
 
 export default function DailyChallengePage() {
@@ -162,10 +162,10 @@ export default function DailyChallengePage() {
 
             if (result.is_correct) {
                 sounds.play('correct')
-                await Haptics.impact({ style: ImpactStyle.Medium })
+                await haptics.impact(ImpactStyle.Medium)
             } else {
                 sounds.play('wrong')
-                await Haptics.impact({ style: ImpactStyle.Light })
+                await haptics.impact(ImpactStyle.Light)
             }
 
             setFeedback(result.is_correct

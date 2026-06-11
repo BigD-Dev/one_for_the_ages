@@ -5,18 +5,20 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/useAuthStore'
 import { apiClient } from '@/lib/api-client'
 import { calculateLevel } from '@/lib/xp'
+import { sounds } from '@/lib/sounds'
+import { haptics } from '@/lib/haptics'
 import { logger } from '@/lib/logger'
 import { AppShell } from '@/components/ui/Layout'
 import { Card } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
 import { Switch } from '@/components/ui/Switch'
 import { ProgressBar } from '@/components/ui/ProgressBar'
-import { ArrowLeft, Check, LogOut, Trash2 } from 'lucide-react'
+import { ArrowLeft, LogOut } from 'lucide-react'
 import { signOut } from '@/lib/firebase'
 
 interface UserStats {
     lifetime_score: number
     best_streak: number
+    current_streak: number
     games_played: number
     total_correct: number
     total_questions: number
@@ -25,17 +27,24 @@ interface UserStats {
     daily_challenges: number
 }
 
+interface Achievement {
+    id: string
+    title: string
+    description: string
+    icon: string | null
+    unlocked: boolean
+}
+
 export default function ProfilePage() {
     const router = useRouter()
     const { isAuthenticated, authReady, oftaUser, user, logout } = useAuthStore()
     const [stats, setStats] = useState<UserStats | null>(null)
+    const [achievements, setAchievements] = useState<Achievement[]>([])
     const [isLoading, setIsLoading] = useState(true)
 
-    // Settings State (Local for now, persist to localStorage later)
     const [settings, setSettings] = useState({
         sound: true,
         haptics: true,
-        notifications: true,
     })
 
     useEffect(() => {
@@ -46,17 +55,23 @@ export default function ProfilePage() {
         }
         loadProfile()
 
-        // Load settings from localStorage
         const savedSettings = localStorage.getItem('ofta-settings')
         if (savedSettings) {
-            setSettings(JSON.parse(savedSettings))
+            try {
+                const parsed = JSON.parse(savedSettings)
+                setSettings({ sound: parsed.sound !== false, haptics: parsed.haptics !== false })
+            } catch { /* ignore */ }
         }
     }, [isAuthenticated, authReady])
 
     const loadProfile = async () => {
         try {
-            const statsData = await apiClient.getUserStats().catch(() => null)
-            setStats(statsData)
+            const [statsData, achData] = await Promise.allSettled([
+                apiClient.getUserStats(),
+                apiClient.getUserAchievements(),
+            ])
+            if (statsData.status === 'fulfilled') setStats(statsData.value)
+            if (achData.status === 'fulfilled') setAchievements(achData.value.achievements || [])
         } catch (error) {
             logger.error('Failed to load profile:', error)
         } finally {
@@ -64,10 +79,12 @@ export default function ProfilePage() {
         }
     }
 
-    const toggleSetting = (key: keyof typeof settings) => {
+    const toggleSetting = (key: 'sound' | 'haptics') => {
         const newSettings = { ...settings, [key]: !settings[key] }
         setSettings(newSettings)
         localStorage.setItem('ofta-settings', JSON.stringify(newSettings))
+        if (key === 'sound') sounds.setEnabled(newSettings.sound)
+        if (key === 'haptics') haptics.setEnabled(newSettings.haptics)
     }
 
     const handleLogout = async () => {
@@ -95,13 +112,12 @@ export default function ProfilePage() {
         )
     }
 
-    // Derived Stats
     const levelInfo = calculateLevel(stats?.lifetime_score || 0)
     const accuracy = stats?.accuracy_pct ? Math.round(stats.accuracy_pct) : 0
+    const unlockedCount = achievements.filter(a => a.unlocked).length
 
     return (
         <AppShell className="bg-canvas pb-24 px-6 pt-10 font-sans">
-            {/* Header: Back Button */}
             <header className="flex items-center justify-between mb-8">
                 <button
                     onClick={() => router.push('/')}
@@ -111,19 +127,17 @@ export default function ProfilePage() {
                     <span className="text-sm font-medium tracking-wide uppercase">Back</span>
                 </button>
                 <h1 className="text-sm font-bold text-text-primary tracking-[0.2em] uppercase">Profile</h1>
-                <div className="w-6" /> {/* Spacer for alignment */}
+                <div className="w-6" />
             </header>
 
-            {/* 1️⃣ Identity Header */}
+            {/* Identity */}
             <section className="flex flex-col items-center mb-10">
                 <div className="w-24 h-24 rounded-full border-2 border-primary/30 flex items-center justify-center bg-surface-raised mb-4 shadow-[0_0_15px_rgba(30,122,140,0.15)] relative">
                     <span className="text-4xl font-serif text-primary">
                         {oftaUser?.display_name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'P'}
                     </span>
-                    {/* Optional: Online Indicator */}
                     <div className="absolute bottom-1 right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-canvas" />
                 </div>
-
                 <h2 className="text-xl font-bold text-text-primary font-serif mb-1">
                     {oftaUser?.display_name || user?.displayName || oftaUser?.email?.split('@')[0] || user?.email?.split('@')[0] || 'Player'}
                 </h2>
@@ -141,10 +155,10 @@ export default function ProfilePage() {
                 </div>
             </section>
 
-            {/* 2️⃣ Primary Stats Card */}
+            {/* Stats */}
             <Card className="p-0 border-border-subtle bg-surface-raised overflow-hidden mb-6">
                 <div className="grid grid-cols-2 divide-x divide-border-subtle">
-                    <StatBox label="Avg. Score" value={stats?.lifetime_score ? Math.round(stats.lifetime_score / (stats.games_played || 1)).toString() : "0"} />
+                    <StatBox label="Avg. Score" value={stats?.lifetime_score ? Math.round(stats.lifetime_score / (stats.games_played || 1)).toString() : '0'} />
                     <StatBox label="Accuracy" value={`${accuracy}%`} color="text-green-400" />
                 </div>
                 <div className="border-t border-border-subtle grid grid-cols-2 divide-x divide-border-subtle">
@@ -153,10 +167,9 @@ export default function ProfilePage() {
                 </div>
             </Card>
 
-            {/* 3️⃣ Streak Section */}
-            <Card className="p-5 border-gold/30 bg-gradient-to-r from-surface-raised via-surface-raised to-[#1A1810] mb-8 relative overflow-hidden group">
+            {/* Streak */}
+            <Card className="p-5 border-gold/30 bg-gradient-to-r from-surface-raised via-surface-raised to-[#1A1810] mb-8 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-gold/5 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-
                 <div className="flex items-center justify-between relative z-10">
                     <div>
                         <div className="flex items-center gap-2 mb-1">
@@ -164,7 +177,7 @@ export default function ProfilePage() {
                             <span className="text-sm font-bold text-gold tracking-widest uppercase">Current Streak</span>
                         </div>
                         <p className="text-3xl font-serif text-text-primary">
-                            {stats?.best_streak || 0} <span className="text-base font-sans text-text-muted">Days</span>
+                            {stats?.current_streak || 0} <span className="text-base font-sans text-text-muted">Days</span>
                         </p>
                     </div>
                     <div className="text-right">
@@ -174,29 +187,46 @@ export default function ProfilePage() {
                 </div>
             </Card>
 
-            {/* 4️⃣ Settings Controls */}
+            {/* Achievements */}
+            {achievements.length > 0 && (
+                <section className="mb-8">
+                    <div className="flex items-center justify-between mb-3 px-1">
+                        <h3 className="text-[10px] text-text-muted uppercase tracking-[0.2em] font-bold">Achievements</h3>
+                        <span className="text-[10px] text-primary font-mono">{unlockedCount} / {achievements.length}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        {achievements.map((ach) => (
+                            <div
+                                key={ach.id}
+                                className={`p-3 rounded-sharp border flex items-start gap-3 ${
+                                    ach.unlocked
+                                        ? 'bg-surface-raised border-gold/20'
+                                        : 'bg-surface border-border-subtle opacity-40'
+                                }`}
+                            >
+                                <span className="text-xl leading-none">{ach.icon || (ach.unlocked ? '🏆' : '🔒')}</span>
+                                <div className="min-w-0">
+                                    <p className={`text-[11px] font-bold leading-tight truncate ${ach.unlocked ? 'text-text-primary' : 'text-text-muted'}`}>
+                                        {ach.title}
+                                    </p>
+                                    <p className="text-[9px] text-text-muted leading-tight mt-0.5 line-clamp-2">{ach.description}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
+
+            {/* Settings */}
             <section className="space-y-4 mb-10">
                 <h3 className="text-[10px] text-text-muted uppercase tracking-[0.2em] px-1 font-bold">Preferences</h3>
                 <Card className="divide-y divide-border-subtle bg-surface-raised border-border-subtle">
-                    <SettingRow
-                        label="Sound Effects"
-                        checked={settings.sound}
-                        onChange={() => toggleSetting('sound')}
-                    />
-                    <SettingRow
-                        label="Haptics"
-                        checked={settings.haptics}
-                        onChange={() => toggleSetting('haptics')}
-                    />
-                    <SettingRow
-                        label="Notifications"
-                        checked={settings.notifications}
-                        onChange={() => toggleSetting('notifications')}
-                    />
+                    <SettingRow label="Sound Effects" checked={settings.sound} onChange={() => toggleSetting('sound')} />
+                    <SettingRow label="Haptics" checked={settings.haptics} onChange={() => toggleSetting('haptics')} />
                 </Card>
             </section>
 
-            {/* 5️⃣ Account Controls */}
+            {/* Account */}
             <section className="space-y-4 mb-8">
                 <h3 className="text-[10px] text-text-muted uppercase tracking-[0.2em] px-1 font-bold">Account</h3>
                 <button
@@ -218,14 +248,14 @@ export default function ProfilePage() {
 
             <div className="text-center pb-8">
                 <p className="text-[10px] text-border-subtle font-mono">
-                    ID: {oftaUser?.firebase_uid || user?.uid || 'GUEST'} • v1.0.0
+                    ID: {oftaUser?.firebase_uid || user?.uid || 'GUEST'} · v1.0.0
                 </p>
             </div>
         </AppShell>
     )
 }
 
-function StatBox({ label, value, color = "text-text-primary" }: { label: string, value: string, color?: string }) {
+function StatBox({ label, value, color = 'text-text-primary' }: { label: string; value: string; color?: string }) {
     return (
         <div className="p-4 text-center">
             <p className="text-[10px] text-text-muted uppercase tracking-widest mb-1">{label}</p>
@@ -234,7 +264,7 @@ function StatBox({ label, value, color = "text-text-primary" }: { label: string,
     )
 }
 
-function SettingRow({ label, checked, onChange }: { label: string, checked: boolean, onChange: () => void }) {
+function SettingRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
     return (
         <div className="flex items-center justify-between p-4">
             <span className="text-sm text-text-primary font-medium">{label}</span>

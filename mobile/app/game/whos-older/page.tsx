@@ -13,7 +13,7 @@ import { getDbCategories } from '@/lib/categories'
 import { apiClient } from '@/lib/api-client'
 import { logger } from '@/lib/logger'
 import { sounds } from '@/lib/sounds'
-import { Haptics, ImpactStyle } from '@capacitor/haptics'
+import { haptics, ImpactStyle } from '@/lib/haptics'
 import { ArrowLeft, Clock, Info, Pause, Play, CheckCircle, X } from 'lucide-react'
 
 const TIMER_DURATION = 8000 // 8 seconds
@@ -154,10 +154,10 @@ export default function WhosOlderPage() {
 
             if (result.is_correct) {
                 sounds.play('correct')
-                await Haptics.impact({ style: ImpactStyle.Medium })
+                await haptics.impact(ImpactStyle.Medium)
             } else {
                 sounds.play('wrong')
-                await Haptics.impact({ style: ImpactStyle.Light })
+                await haptics.impact(ImpactStyle.Light)
             }
 
             submitAnswer(result.is_correct, result.score_awarded)

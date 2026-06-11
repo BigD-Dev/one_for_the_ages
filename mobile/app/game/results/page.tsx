@@ -8,7 +8,7 @@ import { AppShell } from '@/components/ui/Layout'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ResultConfetti } from '@/components/game/ResultConfetti'
-import { Medal, Share2, Target, Calendar, BarChart3, Home } from 'lucide-react'
+import { Medal, Share2, Target, Calendar, BarChart3, Home, RotateCcw } from 'lucide-react'
 import { logger } from '@/lib/logger'
 
 export default function ResultsPage() {
@@ -78,6 +78,18 @@ export default function ResultsPage() {
     const handleHome = () => {
         resetGame()
         router.push('/')
+    }
+
+    const handlePlayAgain = () => {
+        resetGame()
+        const routes: Record<string, string> = {
+            AGE_GUESS: '/game/age-guess',
+            WHO_OLDER: '/game/whos-older',
+            REVERSE_SIGN: '/game/reverse?type=sign',
+            REVERSE_DOB: '/game/reverse?type=year',
+            DAILY_CHALLENGE: '/game/daily',
+        }
+        router.push(routes[mode || ''] || '/')
     }
 
     // Determine badge
@@ -210,8 +222,16 @@ export default function ResultsPage() {
                     className="w-full space-y-4"
                 >
                     <button
-                        onClick={handleShare}
+                        onClick={handlePlayAgain}
                         className="w-full py-4 bg-primary hover:bg-primary-dark text-white font-bold rounded-sharp border-none shadow-lg active:scale-[0.98] transition-all flex items-center justify-center gap-2 uppercase tracking-wide text-sm"
+                    >
+                        <RotateCcw size={18} />
+                        Play Again
+                    </button>
+
+                    <button
+                        onClick={handleShare}
+                        className="w-full py-4 bg-surface hover:bg-surface-raised text-text-muted font-bold rounded-sharp border border-border-subtle active:scale-[0.98] transition-all flex items-center justify-center gap-2 uppercase tracking-wide text-sm"
                     >
                         <Share2 size={18} />
                         Share to Story
