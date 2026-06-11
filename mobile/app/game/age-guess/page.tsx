@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { AppShell } from '@/components/ui/Layout'
 import { PersonImage } from '@/components/ui/PersonImage'
@@ -46,7 +46,7 @@ export default function AgeGuessPage() {
     const [showHint, setShowHint] = useState(false)
     const [hasUsedHint, setHasUsedHint] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
-    const pendingSubmit = React.useRef<Promise<any> | null>(null)
+    const pendingSubmit = useRef<Promise<any> | null>(null)
     const [selectedOption, setSelectedOption] = useState<number | null>(null)
     const [feedback, setFeedback] = useState<{
         type: 'spot-on' | 'close' | 'wrong' | null

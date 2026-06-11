@@ -35,14 +35,25 @@ class APIClient {
             (error) => Promise.reject(error)
         )
 
-        // Response interceptor for error handling
+        // Response interceptor — refresh Firebase token on 401 and retry once
         this.client.interceptors.response.use(
             (response) => response,
-            (error: AxiosError) => {
-                if (error.response?.status === 401) {
-                    // Token expired or invalid
+            async (error: AxiosError) => {
+                const config = error.config as any
+                if (error.response?.status === 401 && !config?._retried) {
+                    config._retried = true
+                    try {
+                        const { getIdToken } = await import('@/lib/firebase')
+                        const token = await getIdToken()
+                        if (token) {
+                            this.setToken(token)
+                            config.headers = { ...config.headers, Authorization: `Bearer ${token}` }
+                            return this.client(config)
+                        }
+                    } catch {
+                        // token refresh failed — fall through to reject
+                    }
                     this.clearToken()
-                    // Optionally trigger re-authentication
                 }
                 return Promise.reject(error)
             }
