@@ -120,12 +120,10 @@ export default function AgeGuessPage() {
             Haptics.impact({ style: ImpactStyle.Light })
         }
 
-        const isCorrect = diff === 0
         setFeedback({ type, correctAge, scoreAwarded: 0, diff })
-        submitAnswer(isCorrect, 0)
         setIsSubmitting(false)
 
-        // Fire API in background for score tracking — don't await
+        // Submit to API for authoritative score — single source of truth for correctCount
         apiClient.submitAnswer(sessionId!, {
             question_template_id: currentQuestion.id,
             question_index: currentQuestionIndex,
@@ -134,7 +132,6 @@ export default function AgeGuessPage() {
             hints_used: hasUsedHint ? 1 : 0,
         }).then((result) => {
             if (result) {
-                // Update score with server-computed value
                 submitAnswer(result.is_correct, result.score_awarded)
                 setFeedback(prev => prev.type ? { ...prev, scoreAwarded: result.score_awarded } : prev)
             }
@@ -243,7 +240,7 @@ export default function AgeGuessPage() {
             {/* 3️⃣ Options Grid */}
             <div className="w-full max-w-md mx-auto mb-8 px-4">
                 <OptionsGrid
-                    options={currentQuestion.options?.map((opt: number) => ({
+                    options={currentQuestion.options?.map((opt: string | number) => ({
                         id: opt,
                         label: opt.toString(),
                     })) || []}

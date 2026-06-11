@@ -326,9 +326,15 @@ async def start_session(
                 correct_age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
 
                 spread = spreads[i]
-                pool = [correct_age + d for d in range(-spread, spread + 1)
-                        if d != 0 and 16 <= correct_age + d <= 100]
-                distractors = random.sample(pool, min(3, len(pool)))
+                pool = set()
+                s = spread
+                while len(pool) < 3:
+                    for d in range(-s, s + 1):
+                        v = correct_age + d
+                        if d != 0 and 16 <= v <= 100:
+                            pool.add(v)
+                    s += 1
+                distractors = random.sample(list(pool), 3)
                 options = distractors + [correct_age]
                 random.shuffle(options)
                 question.options = options

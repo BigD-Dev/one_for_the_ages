@@ -1,15 +1,19 @@
-// lib/api-client.ts
-/**
- * API Client for OFTA Backend
- */
-
 import axios, { AxiosInstance, AxiosError } from 'axios'
+import { offlineStartSession, offlineSubmitAnswer, offlineEndSession } from './offline-engine'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081'
+
+function isOffline(): boolean {
+    return typeof navigator !== 'undefined' && !navigator.onLine
+}
 
 class APIClient {
     private client: AxiosInstance
     private authToken: string | null = null
+
+    // Tracks questions for the current offline session so endSession can score them
+    private _offlineQuestions: any[] = []
+    private _offlineAnswers: any[] = []
 
     constructor() {
         this.client = axios.create({
@@ -98,6 +102,12 @@ class APIClient {
         categories?: string[]
         difficulty?: string
     }) {
+        if (isOffline()) {
+            const session = await offlineStartSession(payload)
+            this._offlineQuestions = session.questions
+            this._offlineAnswers = []
+            return session
+        }
         const { data } = await this.client.post('/v1/sessions/start', payload)
         return data
     }
@@ -105,10 +115,20 @@ class APIClient {
     async submitAnswer(sessionId: string, payload: {
         question_template_id: string
         question_index: number
-        user_answer: string | number | boolean
+        user_answer: any
         response_time_ms: number
         hints_used: number
     }) {
+        if (isOffline() || sessionId.startsWith('offline-')) {
+            const question = this._offlineQuestions[payload.question_index]
+            const result = offlineSubmitAnswer({
+                question,
+                user_answer: payload.user_answer,
+                mode: question?.mode ?? '',
+            })
+            this._offlineAnswers[payload.question_index] = result
+            return result
+        }
         const { data } = await this.client.post(
             `/v1/sessions/${sessionId}/answer`,
             payload
@@ -117,6 +137,9 @@ class APIClient {
     }
 
     async endSession(sessionId: string) {
+        if (isOffline() || sessionId.startsWith('offline-')) {
+            return offlineEndSession(this._offlineQuestions, this._offlineAnswers)
+        }
         const { data } = await this.client.post(`/v1/sessions/${sessionId}/end`)
         return {
             totalScore: data.total_score,
