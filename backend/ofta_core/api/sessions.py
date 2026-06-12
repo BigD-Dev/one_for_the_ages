@@ -93,6 +93,13 @@ class AnswerResponse(BaseModel):
     streak_bonus: Optional[float] = None
 
 
+class UnlockedAchievement(BaseModel):
+    id: str
+    title: str
+    description: str
+    icon: Optional[str] = None
+
+
 class EndSessionResponse(BaseModel):
     session_id: str
     total_score: int
@@ -102,6 +109,7 @@ class EndSessionResponse(BaseModel):
     accuracy: float
     lifetime_score: int
     global_rank: int
+    new_achievements: List[UnlockedAchievement] = []
 
 
 # ────────────────────────────────────────────────
@@ -443,12 +451,14 @@ async def submit_answer(
     error_value = None
     score_awarded = 0
     
-    if mode == "AGE_GUESS":
+    if mode in ("AGE_GUESS", "DAILY_CHALLENGE"):
         dob = question['date_of_birth']
         if isinstance(dob, str):
             dob = datetime.strptime(dob, '%Y-%m-%d').date()
-        
-        correct_age = (date.today() - dob).days // 365
+
+        # Calendar age — must match start_session's calc exactly, days//365 drifts on leap years
+        today = date.today()
+        correct_age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
         user_age = request.user_answer.get('age', 0)
         error_value = abs(correct_age - user_age)
         
@@ -594,7 +604,7 @@ async def end_session(
     # Verify session
     session_df = db.select_df(
         """
-        SELECT gs.id, gs.user_id, ua.firebase_uid
+        SELECT gs.id, gs.user_id, gs.mode, ua.firebase_uid
         FROM ofta_prod.ofta_game_session gs
         JOIN ofta_prod.ofta_user_account ua ON gs.user_id = ua.id
         WHERE gs.id = :session_id
@@ -732,6 +742,45 @@ async def end_session(
         }
     )
 
+    # Unlock any achievements whose conditions are now met
+    session_mode = session_df.iloc[0]['mode']
+    new_achievements = []
+    try:
+        eligible_df = db.select_df(
+            """
+            SELECT a.id, a.title, a.description, a.icon
+            FROM ofta_prod.ofta_achievement a
+            JOIN ofta_prod.ofta_user_stats s ON s.user_id = :user_id
+            LEFT JOIN ofta_prod.ofta_user_achievement ua
+                ON ua.achievement_id = a.id AND ua.user_id = :user_id
+            WHERE ua.achievement_id IS NULL
+              AND (
+                    (a.condition_type = 'games_played' AND s.games_played >= a.condition_value)
+                 OR (a.condition_type = 'best_streak' AND s.best_streak >= a.condition_value)
+                 OR (a.condition_type = 'daily_accuracy' AND :mode = 'DAILY_CHALLENGE'
+                     AND :accuracy >= a.condition_value)
+              )
+            """,
+            params={"user_id": user_id, "mode": session_mode, "accuracy": accuracy}
+        )
+        for _, ach in eligible_df.iterrows():
+            db.execute_query(
+                """
+                INSERT INTO ofta_prod.ofta_user_achievement (user_id, achievement_id)
+                VALUES (:user_id, :achievement_id)
+                ON CONFLICT (user_id, achievement_id) DO NOTHING
+                """,
+                params={"user_id": user_id, "achievement_id": ach['id']}
+            )
+            new_achievements.append(UnlockedAchievement(
+                id=ach['id'],
+                title=ach['title'],
+                description=ach['description'],
+                icon=ach.get('icon'),
+            ))
+    except Exception:
+        logger.exception("Achievement unlock check failed for session %s", session_id)
+
     # Read fresh lifetime score and rank
     user_stats_df = db.select_df(
         "SELECT lifetime_score FROM ofta_prod.ofta_user_stats WHERE user_id = :user_id",
@@ -758,5 +807,6 @@ async def end_session(
         best_streak=best_streak,
         accuracy=accuracy,
         lifetime_score=lifetime_score,
-        global_rank=global_rank
+        global_rank=global_rank,
+        new_achievements=new_achievements
     )

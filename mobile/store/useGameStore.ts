@@ -23,6 +23,13 @@ export interface Question {
     correct_answer: Record<string, unknown> | null
 }
 
+export interface UnlockedAchievement {
+    id: string
+    title: string
+    description: string
+    icon?: string | null
+}
+
 export interface GameResult {
     totalScore: number
     questionsCount: number
@@ -32,6 +39,7 @@ export interface GameResult {
     newHighScore?: boolean
     lifetimeScore?: number
     globalRank?: number
+    newAchievements?: UnlockedAchievement[]
 }
 
 interface GameState {

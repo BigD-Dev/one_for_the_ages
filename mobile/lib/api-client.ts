@@ -160,6 +160,7 @@ class APIClient {
             accuracy: data.accuracy,
             lifetimeScore: data.lifetime_score,
             globalRank: data.global_rank,
+            newAchievements: data.new_achievements || [],
         }
     }
 

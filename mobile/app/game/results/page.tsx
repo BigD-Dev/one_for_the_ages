@@ -8,6 +8,7 @@ import { AppShell } from '@/components/ui/Layout'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ResultConfetti } from '@/components/game/ResultConfetti'
+import { AchievementToast } from '@/components/ui/AchievementToast'
 import { Medal, Share2, Target, Calendar, BarChart3, Home, RotateCcw } from 'lucide-react'
 import { logger } from '@/lib/logger'
 
@@ -16,6 +17,16 @@ export default function ResultsPage() {
     const { lastGameResult, score: currentScore, mode, resetGame } = useGameStore()
     const [showConfetti, setShowConfetti] = useState(false)
     const [animatedScore, setAnimatedScore] = useState(0)
+    const [achievementIndex, setAchievementIndex] = useState(0)
+
+    const newAchievements = lastGameResult?.newAchievements || []
+    const currentAchievement = newAchievements[achievementIndex]
+
+    useEffect(() => {
+        if (!currentAchievement) return
+        const timer = setTimeout(() => setAchievementIndex(i => i + 1), 3500)
+        return () => clearTimeout(timer)
+    }, [achievementIndex, currentAchievement])
 
     const result = lastGameResult || {
         totalScore: currentScore,
@@ -123,6 +134,13 @@ export default function ResultsPage() {
     return (
         <div className="min-h-screen bg-canvas flex flex-col items-center justify-center relative overflow-hidden p-6">
             <ResultConfetti isActive={showConfetti} />
+
+            <AchievementToast
+                title={currentAchievement?.title || ''}
+                description={currentAchievement?.description || ''}
+                isVisible={!!currentAchievement}
+                onDismiss={() => setAchievementIndex(i => i + 1)}
+            />
 
             <div className="w-full max-w-md mx-auto flex flex-col items-center z-10">
 
