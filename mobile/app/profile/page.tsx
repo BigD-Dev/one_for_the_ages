@@ -12,7 +12,8 @@ import { AppShell } from '@/components/ui/Layout'
 import { Card } from '@/components/ui/Card'
 import { Switch } from '@/components/ui/Switch'
 import { ProgressBar } from '@/components/ui/ProgressBar'
-import { ArrowLeft, LogOut } from 'lucide-react'
+import { ArrowLeft, LogOut, Settings } from 'lucide-react'
+import Link from 'next/link'
 import { signOut } from '@/lib/firebase'
 
 interface UserStats {
@@ -127,7 +128,9 @@ export default function ProfilePage() {
                     <span className="text-sm font-medium tracking-wide uppercase">Back</span>
                 </button>
                 <h1 className="text-sm font-bold text-text-primary tracking-[0.2em] uppercase">Profile</h1>
-                <div className="w-6" />
+                <Link href="/settings" className="text-text-muted hover:text-text-primary transition-colors p-1">
+                    <Settings size={18} />
+                </Link>
             </header>
 
             {/* Identity */}

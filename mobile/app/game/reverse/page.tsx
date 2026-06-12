@@ -18,6 +18,7 @@ import { AppShell } from '@/components/ui/Layout'
 import { ReverseHUD } from '@/components/game/ReverseHUD'
 import { OptionsGrid } from '@/components/game/OptionsGrid'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Play, Pause } from 'lucide-react'
 
 const ZODIAC_SIGNS = [
     { id: 'Aries', label: 'Aries', symbol: '♈' },
@@ -55,6 +56,9 @@ export default function ReverseModePage() {
     const [feedback, setFeedback] = useState<{ isCorrect: boolean, text: string, subtext: string } | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [mode, setMode] = useState<'REVERSE_SIGN' | 'REVERSE_DOB' | null>(null)
+    const [isPaused, setIsPaused] = useState(false)
+    const [showHint, setShowHint] = useState(false)
+    const [hasUsedHint, setHasUsedHint] = useState(false)
 
     const currentQuestion = questions[currentQuestionIndex]
     const isLastQuestion = currentQuestionIndex === questions.length - 1
@@ -111,7 +115,7 @@ export default function ReverseModePage() {
     }, [mode, currentQuestion])
 
     const handleSelect = async (id: string | number) => {
-        if (feedback || !currentQuestion) return
+        if (feedback || !currentQuestion || isPaused) return
         setSelectedId(id)
 
         try {
@@ -123,7 +127,7 @@ export default function ReverseModePage() {
                 question_index: currentQuestionIndex,
                 user_answer: userAnswer,
                 response_time_ms: responseTimeMs,
-                hints_used: 0,
+                hints_used: hasUsedHint ? 1 : 0,
             })
 
             const correctVal = mode === 'REVERSE_SIGN' ? result.correct_answer?.sign : result.correct_answer?.year
@@ -154,8 +158,10 @@ export default function ReverseModePage() {
                     setSelectedId(null)
                     setCorrectId(null)
                     setFeedback(null)
+                    setShowHint(false)
+                    setHasUsedHint(false)
                 }
-            }, 1500) // 1s + some buffer
+            }, 1500)
         } catch (error) {
             logger.error('Failed to submit:', error)
         }
@@ -232,12 +238,19 @@ export default function ReverseModePage() {
                         className="pt-4"
                     />
 
-                    {/* HUD Replacement/Secondary Controls (Hint/Pause) */}
+                    {/* Secondary Controls */}
                     <div className="flex justify-between items-center px-2 pt-4">
-                        <button className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] opacity-40 hover:opacity-100 transition-opacity">
-                            Hint (-20%)
+                        <button
+                            onClick={() => { if (!hasUsedHint && !feedback) setShowHint(true) }}
+                            disabled={hasUsedHint}
+                            className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] opacity-40 hover:opacity-100 disabled:opacity-20 transition-opacity"
+                        >
+                            {hasUsedHint ? 'Hint Used' : 'Hint (-20%)'}
                         </button>
-                        <button className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] opacity-40 hover:opacity-100 transition-opacity">
+                        <button
+                            onClick={() => setIsPaused(true)}
+                            className="text-[10px] font-black text-text-muted uppercase tracking-[0.2em] opacity-40 hover:opacity-100 transition-opacity"
+                        >
                             Pause
                         </button>
                     </div>
@@ -270,6 +283,55 @@ export default function ReverseModePage() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Hint overlay */}
+            {showHint && (
+                <div className="fixed inset-0 z-40 bg-black/70 flex items-end justify-center p-6 pb-10">
+                    <div className="w-full max-w-sm bg-surface-raised border border-border-subtle rounded-sharp p-6 space-y-4">
+                        <p className="text-[10px] text-text-muted uppercase tracking-widest font-bold">Hint</p>
+                        <p className="text-text-primary text-sm leading-relaxed">
+                            {currentQuestion?.hints?.[0] || 'No hint available.'}
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowHint(false)}
+                                className="flex-1 py-3 bg-white/5 text-text-muted text-xs font-bold uppercase tracking-widest rounded-sharp"
+                            >
+                                Close
+                            </button>
+                            {!hasUsedHint && (
+                                <button
+                                    onClick={() => { setHasUsedHint(true); setShowHint(false) }}
+                                    className="flex-1 py-3 bg-primary/20 border border-primary/40 text-primary text-xs font-bold uppercase tracking-widest rounded-sharp"
+                                >
+                                    Use Hint (-20%)
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Pause overlay */}
+            {isPaused && (
+                <div className="fixed inset-0 z-50 bg-canvas flex flex-col items-center justify-center p-8">
+                    <h1 className="font-serif text-5xl text-text-primary mb-12">Paused</h1>
+                    <div className="w-full max-w-xs space-y-4">
+                        <button
+                            onClick={() => setIsPaused(false)}
+                            className="w-full bg-primary text-white font-bold text-xs tracking-[0.4em] uppercase py-6 rounded-sharp flex items-center justify-center gap-3"
+                        >
+                            <Play size={16} /> Resume
+                        </button>
+                        <button
+                            onClick={() => router.push('/')}
+                            className="w-full bg-white/5 text-text-muted font-bold text-xs tracking-[0.4em] uppercase py-6 rounded-sharp"
+                        >
+                            Quit Game
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

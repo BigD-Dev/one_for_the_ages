@@ -94,11 +94,19 @@ export default function WhosOlderPage() {
     const startTimer = () => {
         stopTimer()
         setTimeLeft(TIMER_DURATION)
+        resumeTimer()
+    }
+
+    const stopTimer = () => {
+        if (timerRef.current) clearInterval(timerRef.current)
+    }
+
+    const resumeTimer = () => {
         timerRef.current = setInterval(() => {
             setTimeLeft((prev) => {
                 if (prev <= 0) {
                     stopTimer()
-                    handleSelection(null) // Timeout
+                    handleSelection(null)
                     return 0
                 }
                 return prev - 100
@@ -106,8 +114,14 @@ export default function WhosOlderPage() {
         }, 100)
     }
 
-    const stopTimer = () => {
-        if (timerRef.current) clearInterval(timerRef.current)
+    const handlePause = () => {
+        stopTimer()
+        setIsPaused(true)
+    }
+
+    const handleResume = () => {
+        setIsPaused(false)
+        resumeTimer()
     }
 
     const handleSelection = async (choice: 'A' | 'B' | null) => {
@@ -118,13 +132,28 @@ export default function WhosOlderPage() {
         setIsSubmitting(true)
 
         if (!choice) {
-            // Handle timeout
-            setFeedback({
-                isCorrect: false,
-                correctChoice: null, // should probably fetch this still
-                scoreAwarded: 0
-            })
-            setTimeout(handleNext, 1200)
+            // Timeout — still submit to get correct years back
+            try {
+                const result = await apiClient.submitAnswer(sessionId!, {
+                    question_template_id: currentQuestion.id,
+                    question_index: currentQuestionIndex,
+                    user_answer: { choice: 'TIMEOUT' },
+                    response_time_ms: TIMER_DURATION,
+                    hints_used: 0,
+                })
+                submitAnswer(false, 0)
+                setFeedback({
+                    isCorrect: false,
+                    correctChoice: result.correct_answer?.choice,
+                    scoreAwarded: 0,
+                    yearA: result.correct_answer?.year_a,
+                    yearB: result.correct_answer?.year_b,
+                })
+            } catch {
+                setFeedback({ isCorrect: false, correctChoice: null, scoreAwarded: 0 })
+            }
+            setIsSubmitting(false)
+            setTimeout(handleNext, 1500)
             return
         }
 
@@ -281,7 +310,7 @@ export default function WhosOlderPage() {
                         )}
                     </div>
                     <div className="py-4 text-center">
-                        <h3 className="font-serif text-lg text-text-primary line-clamp-1">
+                        <h3 className="font-serif text-lg text-text-primary line-clamp-2 leading-tight">
                             {currentQuestion.person_name_a}
                         </h3>
                     </div>
@@ -315,7 +344,7 @@ export default function WhosOlderPage() {
                         )}
                     </div>
                     <div className="py-4 text-center">
-                        <h3 className="font-serif text-lg text-text-primary line-clamp-1">
+                        <h3 className="font-serif text-lg text-text-primary line-clamp-2 leading-tight">
                             {currentQuestion.person_name_b}
                         </h3>
                     </div>
@@ -340,7 +369,7 @@ export default function WhosOlderPage() {
             {/* Float Pause Control */}
             <div className="absolute bottom-8 right-6">
                 <button
-                    onClick={() => setIsPaused(true)}
+                    onClick={handlePause}
                     className="p-3 bg-white/5 border border-white/5 rounded-full text-text-muted/40 hover:text-text-muted transition-colors shadow-2xl"
                 >
                     <Pause size={18} />
@@ -353,7 +382,7 @@ export default function WhosOlderPage() {
                     <h1 className="font-serif text-5xl text-text-primary mb-12">Paused</h1>
                     <div className="w-full max-w-xs space-y-4">
                         <button
-                            onClick={() => setIsPaused(false)}
+                            onClick={handleResume}
                             className="w-full bg-primary text-white font-montserrat font-bold text-xs tracking-[0.4em] uppercase py-6 rounded-sharp flex items-center justify-center gap-3"
                         >
                             <Play size={16} /> Resume
