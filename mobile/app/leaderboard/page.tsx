@@ -8,7 +8,7 @@ import { logger } from '@/lib/logger'
 import { AppShell } from '@/components/ui/Layout'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface LeaderboardEntry {
     rank: number
@@ -62,6 +62,25 @@ export default function LeaderboardPage() {
         setIsLoading(false)
     }
 
+    const todayStr = new Date().toISOString().split('T')[0]
+
+    const changeDay = (delta: number) => {
+        const d = new Date(selectedDate + 'T00:00:00')
+        d.setDate(d.getDate() + delta)
+        const next = d.toISOString().split('T')[0]
+        if (next > todayStr) return
+        setSelectedDate(next)
+    }
+
+    const dateLabel = () => {
+        if (selectedDate === todayStr) return 'Today'
+        const d = new Date(selectedDate + 'T00:00:00')
+        const yesterday = new Date()
+        yesterday.setDate(yesterday.getDate() - 1)
+        if (selectedDate === yesterday.toISOString().split('T')[0]) return 'Yesterday'
+        return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+    }
+
     const getRankLabel = (rank: number) => {
         if (rank === 1) return 'Gold'
         if (rank === 2) return 'Silver'
@@ -113,16 +132,27 @@ export default function LeaderboardPage() {
                 </button>
             </div>
 
-            {/* Date Picker for Daily */}
+            {/* Day Navigation for Daily */}
             {activeTab === 'daily' && (
-                <div className="mb-6">
-                    <input
-                        type="date"
-                        value={selectedDate}
-                        onChange={(e) => setSelectedDate(e.target.value)}
-                        max={new Date().toISOString().split('T')[0]}
-                        className="w-full bg-surface text-text-primary py-3 px-4 rounded-sharp border border-border-subtle focus:border-primary focus:outline-none"
-                    />
+                <div className="mb-6 flex items-center justify-between bg-surface rounded-sharp border border-border-subtle py-2 px-2">
+                    <button
+                        onClick={() => changeDay(-1)}
+                        className="p-2 text-text-muted hover:text-text-primary transition-colors"
+                        aria-label="Previous day"
+                    >
+                        <ChevronLeft size={18} />
+                    </button>
+                    <span className="text-sm font-medium text-text-primary tracking-wide">
+                        {dateLabel()}
+                    </span>
+                    <button
+                        onClick={() => changeDay(1)}
+                        disabled={selectedDate === todayStr}
+                        className="p-2 text-text-muted hover:text-text-primary transition-colors disabled:opacity-20"
+                        aria-label="Next day"
+                    >
+                        <ChevronRight size={18} />
+                    </button>
                 </div>
             )}
 

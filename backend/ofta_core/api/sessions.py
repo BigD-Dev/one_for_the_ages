@@ -522,6 +522,11 @@ async def submit_answer(
         score_awarded = 50 if is_correct else 0
         correct_answer = {"year": correct_year}
     
+    # Anti-cheat: sub-200ms is below the human reaction floor — void the answer
+    if request.response_time_ms < 200:
+        is_correct = False
+        score_awarded = 0
+
     # Calculate current streak from prior attempts in this session
     streak_df = db.select_df(
         """
@@ -685,6 +690,7 @@ async def end_session(
     
     accuracy = (correct_count / questions_count * 100) if questions_count > 0 else 0
     user_id = session_df.iloc[0]['user_id']
+    session_mode = session_df.iloc[0]['mode']
 
     # Calculate daily streak before upsert
     existing_df = db.select_df(
@@ -742,8 +748,20 @@ async def end_session(
         }
     )
 
+    # Record daily challenge completion (guard prevents double-count on same-day replay)
+    if session_mode == 'DAILY_CHALLENGE':
+        db.execute_query(
+            """
+            UPDATE ofta_prod.ofta_user_stats
+            SET daily_challenges = COALESCE(daily_challenges, 0) + 1,
+                last_daily_date = CURRENT_DATE
+            WHERE user_id = :user_id
+              AND (last_daily_date IS NULL OR last_daily_date < CURRENT_DATE)
+            """,
+            params={"user_id": user_id}
+        )
+
     # Unlock any achievements whose conditions are now met
-    session_mode = session_df.iloc[0]['mode']
     new_achievements = []
     try:
         eligible_df = db.select_df(

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { AppShell } from '@/components/ui/Layout'
 import { BottomNav } from '@/components/ui/BottomNav'
-import { Hourglass, Scale, Star, ArrowRight, SlidersHorizontal } from 'lucide-react'
+import { Hourglass, Scale, Star, ArrowRight, SlidersHorizontal, Check } from 'lucide-react'
 import Link from 'next/link'
 import { useAuthStore } from '@/store/useAuthStore'
 import { useCategoryStore } from '@/store/useCategoryStore'
@@ -19,6 +19,7 @@ interface UserStats {
     games_played: number
     accuracy_pct: number
     current_streak: number
+    last_daily_date?: string | null
 }
 
 export default function Home() {
@@ -127,6 +128,9 @@ export default function Home() {
     }, [])
 
 
+    const dailyDone = !!stats?.last_daily_date
+        && stats.last_daily_date === new Date().toISOString().split('T')[0]
+
     const levelInfo = calculateLevel(stats?.lifetime_score || 0)
     const user = {
         name: oftaUser?.display_name || authUser?.displayName || oftaUser?.email?.split('@')[0] || 'Challenger',
@@ -180,16 +184,28 @@ export default function Home() {
                                 Daily Challenge
                             </div>
                             <h3 className="font-serif text-base text-text-primary leading-tight mb-1">
-                                One pack. One shot.
+                                {dailyDone ? 'Completed for today.' : 'One pack. One shot.'}
                             </h3>
-                            <div className="font-sans text-[9px] text-gold/70 tracking-[0.15em] uppercase">
-                                Resets in {timeLeft}
-                            </div>
+                            {dailyDone ? (
+                                <div className="font-sans text-[9px] text-green-400/80 tracking-[0.15em] uppercase flex items-center gap-1">
+                                    <Check size={10} /> Next challenge in {timeLeft}
+                                </div>
+                            ) : (
+                                <div className="font-sans text-[9px] text-gold/70 tracking-[0.15em] uppercase">
+                                    Resets in {timeLeft}
+                                </div>
+                            )}
                         </div>
                         <Link href="/game/daily" className="z-10 flex-shrink-0">
-                            <button className="bg-primary text-white font-sans text-[10px] tracking-widest uppercase px-4 py-3 rounded-sharp flex items-center gap-1.5 active:bg-primary/80 transition-all whitespace-nowrap shadow-lg shadow-black/40">
-                                Play <ArrowRight size={12} />
-                            </button>
+                            {dailyDone ? (
+                                <button className="bg-surface border border-border-subtle text-text-muted font-sans text-[10px] tracking-widest uppercase px-4 py-3 rounded-sharp flex items-center gap-1.5 active:opacity-80 transition-all whitespace-nowrap">
+                                    Replay <ArrowRight size={12} />
+                                </button>
+                            ) : (
+                                <button className="bg-primary text-white font-sans text-[10px] tracking-widest uppercase px-4 py-3 rounded-sharp flex items-center gap-1.5 active:bg-primary/80 transition-all whitespace-nowrap shadow-lg shadow-black/40">
+                                    Play <ArrowRight size={12} />
+                                </button>
+                            )}
                         </Link>
                     </div>
                 </section>

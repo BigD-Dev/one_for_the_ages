@@ -9,7 +9,9 @@ import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { ResultConfetti } from '@/components/game/ResultConfetti'
 import { AchievementToast } from '@/components/ui/AchievementToast'
-import { Medal, Share2, Target, Calendar, BarChart3, Home, RotateCcw } from 'lucide-react'
+import { ProgressBar } from '@/components/ui/ProgressBar'
+import { calculateLevel } from '@/lib/xp'
+import { Medal, Share2, Target, Calendar, BarChart3, Home, RotateCcw, ChevronsUp } from 'lucide-react'
 import { logger } from '@/lib/logger'
 
 export default function ResultsPage() {
@@ -43,6 +45,10 @@ export default function ResultsPage() {
     const finalScore = result.lifetimeScore || result.totalScore
     const deltaScore = result.totalScore
     const startingScore = Math.max(0, finalScore - deltaScore)
+
+    const startLevel = calculateLevel(startingScore)
+    const endLevel = calculateLevel(finalScore)
+    const leveledUp = endLevel.level > startLevel.level
 
     useEffect(() => {
         // Trigger animations
@@ -105,7 +111,21 @@ export default function ResultsPage() {
 
     // Determine badge
     let Badge = null
-    if (result.newHighScore) {
+    if (leveledUp) {
+        Badge = (
+            <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 1.2, duration: 0.5 }}
+                className="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/30 rounded-full text-primary mb-8 shadow-[0_0_20px_rgba(30,122,140,0.25)]"
+            >
+                <ChevronsUp size={18} />
+                <span className="text-sm font-bold uppercase tracking-wider">
+                    Level Up — Level {endLevel.level} · {endLevel.title}
+                </span>
+            </motion.div>
+        )
+    } else if (result.newHighScore) {
         Badge = (
             <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -177,6 +197,20 @@ export default function ResultsPage() {
                             +{deltaScore} this round
                         </motion.div>
                     )}
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 1.2 }}
+                        className="mt-4 w-48 mx-auto"
+                    >
+                        <p className="text-[10px] text-text-muted uppercase tracking-widest mb-1.5">
+                            Level {endLevel.level} · {endLevel.title}
+                        </p>
+                        <ProgressBar value={endLevel.currentXP} max={endLevel.xpForNextLevel} color="bg-primary" />
+                        <p className="text-[9px] text-text-muted font-mono mt-1">
+                            {endLevel.currentXP} / {endLevel.xpForNextLevel} XP
+                        </p>
+                    </motion.div>
                 </motion.div>
 
                 {/* 3. Performance Breakdown */}
